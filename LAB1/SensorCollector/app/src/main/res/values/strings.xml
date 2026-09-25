@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Sensor Collector</string>
+    <string name="tab_record">Record</string>
+    <string name="tab_history">History &amp; Export</string>
+    <string name="standing_still">Standing Still</string>
+    <string name="walking">Walking</string>
+    <string name="custom_activity">Custom Activity</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="recording_in_progress">Recording in progress…</string>
+    <string name="no_recordings">No CSV recordings found. Start a new recording above!</string>
+    <string name="export_all_zip">Export All (ZIP)</string>
+    <string name="share_csv">Share CSV</string>
+    <string name="save_csv">Save CSV</string>
+    <string name="delete_recording">Delete</string>
+</resources>
