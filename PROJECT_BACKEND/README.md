@@ -1,5 +1,6 @@
 # JAVA_BACKEND
-JAVA_BACKEND
+
+Spring Boot orchestration server for the Android federated pose clients.
 
 ## MQTT (local broker)
 
@@ -7,7 +8,13 @@ This API now includes Spring Integration MQTT support configured for a broker on
 
 - Broker URL: `tcp://localhost:1883`
 - Default publish topic: `java_backend/default`
-- Subscribed topic filter: `java_backend/#`
+- Subscribed topics: `federated/local/weights` and `federated/telemetry`
+- Local weights are decoded using the Android 8-bit format, averaged in groups of
+  `APP_FEDERATED_EXPECTED_CLIENTS` (default `2`), and published as binary payloads to
+  `federated/global/weights`.
+- Configure the broker and federated topics with `APP_MQTT_URL`,
+  `APP_MQTT_LOCAL_WEIGHTS_TOPIC`, `APP_MQTT_GLOBAL_WEIGHTS_TOPIC`,
+  `APP_MQTT_COMMANDS_TOPIC`, and `APP_FEDERATED_EXPECTED_CLIENTS`.
 
 You can override these with environment variables:
 
@@ -24,6 +31,18 @@ Endpoints:
   - Body example: `{"payload":"hello mqtt","topic":"java_backend/test","qos":1,"retained":false}`
 - `GET /api/mqtt/latest`
   - Returns the latest message received from the subscribed topic filter.
+- `POST /api/mqtt/federated/command`
+  - Publishes a JSON command, for example
+    `{"command":"SET_MODEL","active_model":"GLOBAL"}`, to `federated/commands`.
+- `GET /api/mqtt/federated/status`
+  - Returns received update count, pending clients, completed rounds, and global model size.
+- `POST /api/mqtt/federated/model/toggle`
+  - Toggles edge-device inference selection without changing model weights.
+  - Body: `{"activeModel":"LOCAL"}` or `{"activeModel":"GLOBAL"}`.
+
+Telemetry published by Android clients on `federated/telemetry` is relayed as
+the original JSON payload to dashboard WebSocket clients connected to
+`/ws/telemetry`.
 
 ### Publish automatically when broker connection comes up
 

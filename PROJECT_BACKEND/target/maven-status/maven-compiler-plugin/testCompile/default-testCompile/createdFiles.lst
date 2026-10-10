@@ -1,4 +1,6 @@
+com\samuel_robles\java_backend\controller\MqttControllerTest.class
 com\samuel_robles\java_backend\controller\ApiControllerTest.class
 com\samuel_robles\java_backend\TestJavaBackendApplication.class
 com\samuel_robles\java_backend\TestcontainersConfiguration.class
+com\samuel_robles\java_backend\federated\QuantizedWeightsCodecTest.class
 com\samuel_robles\java_backend\JavaBackendApplicationTests.class

@@ -13,7 +13,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -21,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.samuel_robles.java_backend.config.SecurityConfig;
+import com.samuel_robles.java_backend.federated.FederatedAggregationService;
 import com.samuel_robles.java_backend.mqtt.MqttMessageStore;
 import com.samuel_robles.java_backend.mqtt.MqttPublisher;
 
@@ -32,11 +33,14 @@ class MqttControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private MqttPublisher mqttPublisher;
 
-    @MockBean
+    @MockitoBean
     private MqttMessageStore mqttMessageStore;
+
+    @MockitoBean
+    private FederatedAggregationService federatedAggregationService;
 
     @Test
     void publishEndpointAcceptsMessage() throws Exception {
@@ -75,5 +79,32 @@ class MqttControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message.topic").value("java_backend/test"))
                 .andExpect(jsonPath("$.message.payload").value("hello"));
+    }
+
+    @Test
+    void modelToggleEndpointPublishesSetModelCommand() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/model/toggle")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"activeModel":"GLOBAL"}
+                        """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("queued"));
+
+        verify(mqttPublisher).publish(
+                eq("{\"command\":\"SET_MODEL\",\"active_model\":\"GLOBAL\"}"),
+                eq("federated/commands"),
+                eq(1),
+                eq(false));
+    }
+
+    @Test
+    void modelToggleEndpointRejectsUnknownModel() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/model/toggle")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"activeModel":"INVALID"}
+                        """))
+                .andExpect(status().isBadRequest());
     }
 }

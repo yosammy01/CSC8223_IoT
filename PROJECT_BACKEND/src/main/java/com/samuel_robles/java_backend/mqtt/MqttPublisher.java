@@ -26,11 +26,19 @@ public class MqttPublisher {
     }
 
     public void publish(String payload, String topic, Integer qos, Boolean retained) {
+        publishPayload(payload, topic, qos, retained);
+    }
+
+    public void publish(byte[] payload, String topic, Integer qos, Boolean retained) {
+        publishPayload(payload, topic, qos, retained);
+    }
+
+    private void publishPayload(Object payload, String topic, Integer qos, Boolean retained) {
         String targetTopic = StringUtils.hasText(topic) ? topic : defaultTopic;
         int targetQos = qos != null ? qos : defaultQos;
         boolean targetRetained = retained != null && retained;
 
-        Message<String> message = MessageBuilder.withPayload(payload)
+        Message<Object> message = MessageBuilder.withPayload(payload)
                 .setHeader(MqttHeaders.TOPIC, targetTopic)
                 .setHeader(MqttHeaders.QOS, targetQos)
                 .setHeader(MqttHeaders.RETAINED, targetRetained)

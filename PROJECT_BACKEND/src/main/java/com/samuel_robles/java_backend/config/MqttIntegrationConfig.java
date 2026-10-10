@@ -11,11 +11,14 @@ import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
+import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.StringUtils;
 
 import com.samuel_robles.java_backend.mqtt.MqttMessageStore;
+import com.samuel_robles.java_backend.federated.FederatedAggregationService;
+import com.samuel_robles.java_backend.websocket.TelemetryWebSocketHandler;
 
 @Configuration
 public class MqttIntegrationConfig {
@@ -71,11 +74,12 @@ public class MqttIntegrationConfig {
             MqttPahoClientFactory mqttClientFactory,
             @Value("${app.mqtt.client-id-prefix}") String clientIdPrefix,
             @Value("${app.mqtt.inbound-topic}") String inboundTopic,
+            @Value("${app.mqtt.local-weights-topic:federated/local/weights}") String localWeightsTopic,
             @Value("${app.mqtt.qos}") int qos) {
         MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(
                 clientIdPrefix + "-subscriber",
                 mqttClientFactory,
-                inboundTopic);
+            inboundTopic, localWeightsTopic);
         adapter.setQos(qos);
         adapter.setCompletionTimeout(5000);
         adapter.setOutputChannel(mqttInboundChannel());
@@ -84,7 +88,28 @@ public class MqttIntegrationConfig {
 
     @Bean
     @ServiceActivator(inputChannel = "mqttInboundChannel")
-    MessageHandler mqttInboundHandler(MqttMessageStore mqttMessageStore) {
-        return mqttMessageStore::updateFromMessage;
+    MessageHandler mqttInboundHandler(
+            MqttMessageStore mqttMessageStore,
+            FederatedAggregationService aggregationService,
+            TelemetryWebSocketHandler telemetryWebSocketHandler,
+            @Value("${app.mqtt.local-weights-topic:federated/local/weights}") String localWeightsTopic,
+            @Value("${app.mqtt.telemetry-topic:federated/telemetry}") String telemetryTopic) {
+        return message -> {
+            mqttMessageStore.updateFromMessage(message);
+            String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC, String.class);
+            if (localWeightsTopic.equals(topic)) {
+                Object payload = message.getPayload();
+                if (!(payload instanceof byte[] bytes)) {
+                    throw new IllegalArgumentException("Local federated weights must be an MQTT binary payload.");
+                }
+                aggregationService.accept(bytes);
+            } else if (telemetryTopic.equals(topic)) {
+                Object payload = message.getPayload();
+                String telemetry = payload instanceof byte[] bytes
+                        ? new String(bytes, java.nio.charset.StandardCharsets.UTF_8)
+                        : String.valueOf(payload);
+                telemetryWebSocketHandler.broadcast(telemetry);
+            }
+        };
     }
 }

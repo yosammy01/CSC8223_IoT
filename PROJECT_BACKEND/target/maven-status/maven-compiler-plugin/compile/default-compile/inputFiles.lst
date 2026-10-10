@@ -1,3 +1,14 @@
-C:\Users\samue\IdeaProjects\JAVA_BACKEND\src\main\java\com\samuel_robles\java_backend\config\SecurityConfig.java
-C:\Users\samue\IdeaProjects\JAVA_BACKEND\src\main\java\com\samuel_robles\java_backend\controller\ApiController.java
-C:\Users\samue\IdeaProjects\JAVA_BACKEND\src\main\java\com\samuel_robles\java_backend\JavaBackendApplication.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\config\MqttIntegrationConfig.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\config\SecurityConfig.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\config\WebSocketConfig.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\controller\ApiController.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\controller\MqttController.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\FederatedAggregationService.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\QuantizedWeightsCodec.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\JavaBackendApplication.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\mqtt\MqttConnectPublisher.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\mqtt\MqttMessageStore.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\mqtt\MqttPublisher.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\websocket\GenericWebSocketHandler.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\websocket\SecondsWebSocketHandler.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\websocket\TelemetryWebSocketHandler.java

@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.samuel_robles.java_backend.controller.ApiControllerTest
 -------------------------------------------------------------------------------
-Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 15.89 s -- in com.samuel_robles.java_backend.controller.ApiControllerTest
+Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.219 s -- in com.samuel_robles.java_backend.controller.ApiControllerTest
