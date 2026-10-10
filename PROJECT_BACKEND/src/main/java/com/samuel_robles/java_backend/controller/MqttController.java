@@ -85,10 +85,30 @@ public class MqttController {
         return new PublishResponse("queued", Instant.now());
     }
 
+    @PostMapping("/federated/training")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PublishResponse startTraining(@RequestBody TrainingRequest request) {
+        if (request == null || request.useQuantization() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "useQuantization must be true or false.");
+        }
+        mqttPublisher.publish(
+                "{\"command\":\"START_TRAINING\",\"use_quantization\":"
+                        + request.useQuantization() + "}",
+                commandsTopic,
+                1,
+                false);
+        return new PublishResponse("queued", Instant.now());
+    }
+
     public record PublishRequest(String payload, String topic, Integer qos, Boolean retained) {
     }
 
     public record ModelSelectionRequest(ActiveModel activeModel) {
+    }
+
+    public record TrainingRequest(Boolean useQuantization) {
     }
 
     public enum ActiveModel {

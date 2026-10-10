@@ -107,4 +107,29 @@ class MqttControllerTest {
                         """))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void trainingEndpointPublishesStartTrainingCommand() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/training")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"useQuantization":true}
+                        """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("queued"));
+
+        verify(mqttPublisher).publish(
+                eq("{\"command\":\"START_TRAINING\",\"use_quantization\":true}"),
+                eq("federated/commands"),
+                eq(1),
+                eq(false));
+    }
+
+    @Test
+    void trainingEndpointRejectsMissingQuantizationChoice() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/training")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
 }

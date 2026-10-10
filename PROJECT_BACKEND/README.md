@@ -39,6 +39,12 @@ Endpoints:
 - `POST /api/mqtt/federated/model/toggle`
   - Toggles edge-device inference selection without changing model weights.
   - Body: `{"activeModel":"LOCAL"}` or `{"activeModel":"GLOBAL"}`.
+- `POST /api/mqtt/federated/training`
+  - Resets edge models and starts a comparative federated training run using
+    either the 32-bit baseline or 8-bit quantized pipeline.
+  - Body: `{"useQuantization":true}` or `{"useQuantization":false}`.
+  - Publishes `{"command":"START_TRAINING","use_quantization":true|false}` to
+    the configured commands topic.
 
 Telemetry published by Android clients on `federated/telemetry` is relayed as
 the original JSON payload to dashboard WebSocket clients connected to
