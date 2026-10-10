@@ -20,6 +20,7 @@ object MqttClientManager {
     private const val TOPIC_GLOBAL_WEIGHTS = "federated/global/weights"
     private const val TOPIC_LOCAL_WEIGHTS = "federated/local/weights"
     private const val TOPIC_COMMANDS = "federated/commands"
+    private const val TOPIC_TELEMETRY = "federated/telemetry"
 
     private lateinit var mqttClient: MqttAndroidClient
 
@@ -105,6 +106,23 @@ object MqttClientManager {
             }
         } else {
             Log.w(TAG, "Cannot publish weights, MQTT client is disconnected")
+        }
+    }
+
+    fun publishTelemetry(poseName: String) {
+        if (isConnected) {
+            try {
+                val json = JSONObject().apply {
+                    put("clientId", CLIENT_ID)
+                    put("pose", poseName)
+                    put("timestamp", System.currentTimeMillis())
+                }
+                val message = MqttMessage(json.toString().toByteArray())
+                message.qos = 0 // QoS 0 is fine for high-frequency live telemetry
+                mqttClient.publish(TOPIC_TELEMETRY, message)
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception publishing telemetry", e)
+            }
         }
     }
 

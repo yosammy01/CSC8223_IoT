@@ -111,7 +111,11 @@ fun PoseClientScreen() {
                 }
             } else {
                 val predictionIdx = ModelManager.predict(features)
-                predictedPose = poseNames.getOrElse(predictionIdx) { "Unknown" }
+                val newPose = poseNames.getOrElse(predictionIdx) { "Unknown" }
+                predictedPose = newPose
+                
+                // Publish live telemetry for the dashboard
+                MqttClientManager.publishTelemetry(newPose)
             }
         }
     }
