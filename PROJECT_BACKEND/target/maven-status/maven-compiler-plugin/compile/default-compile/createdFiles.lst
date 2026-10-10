@@ -1,0 +1,5 @@
+com\samuel_robles\java_backend\controller\ApiController$ApiInfoResponse.class
+com\samuel_robles\java_backend\controller\ApiController$ApiHealthResponse.class
+com\samuel_robles\java_backend\controller\ApiController.class
+com\samuel_robles\java_backend\JavaBackendApplication.class
+com\samuel_robles\java_backend\config\SecurityConfig.class

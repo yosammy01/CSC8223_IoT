@@ -1,0 +1,3 @@
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.ApiControllerTest]/[method:healthEndpointReturnsUpStatus()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.ApiControllerTest]/[method:rootEndpointReturnsApiMetadata()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.JavaBackendApplicationTests]/[method:applicationClassExists()]

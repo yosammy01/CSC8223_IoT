@@ -1,0 +1,90 @@
+package com.samuel_robles.java_backend.config;
+
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.integration.annotation.ServiceActivator;
+import org.springframework.integration.channel.DirectChannel;
+import org.springframework.integration.core.MessageProducer;
+import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
+import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
+import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
+import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
+import org.springframework.messaging.MessageChannel;
+import org.springframework.messaging.MessageHandler;
+import org.springframework.util.StringUtils;
+
+import com.samuel_robles.java_backend.mqtt.MqttMessageStore;
+
+@Configuration
+public class MqttIntegrationConfig {
+
+    @Bean
+    MqttPahoClientFactory mqttClientFactory(
+            @Value("${app.mqtt.url}") String brokerUrl,
+            @Value("${app.mqtt.username:}") String username,
+            @Value("${app.mqtt.password:}") String password) {
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setServerURIs(new String[] { brokerUrl });
+        options.setAutomaticReconnect(true);
+        options.setCleanSession(true);
+        if (StringUtils.hasText(username)) {
+            options.setUserName(username);
+        }
+        if (StringUtils.hasText(password)) {
+            options.setPassword(password.toCharArray());
+        }
+
+        DefaultMqttPahoClientFactory factory = new DefaultMqttPahoClientFactory();
+        factory.setConnectionOptions(options);
+        return factory;
+    }
+
+    @Bean
+    MessageChannel mqttOutboundChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean
+    @ServiceActivator(inputChannel = "mqttOutboundChannel")
+    MessageHandler mqttOutboundHandler(
+            MqttPahoClientFactory mqttClientFactory,
+            @Value("${app.mqtt.client-id-prefix}") String clientIdPrefix,
+            @Value("${app.mqtt.default-topic}") String defaultTopic,
+            @Value("${app.mqtt.qos}") int qos) {
+        MqttPahoMessageHandler handler = new MqttPahoMessageHandler(clientIdPrefix + "-publisher", mqttClientFactory);
+        handler.setAsync(true);
+        handler.setDefaultQos(qos);
+        handler.setDefaultRetained(false);
+        handler.setDefaultTopic(defaultTopic);
+        return handler;
+    }
+
+    @Bean
+    MessageChannel mqttInboundChannel() {
+        return new DirectChannel();
+    }
+
+    @Bean
+    MessageProducer mqttInboundAdapter(
+            MqttPahoClientFactory mqttClientFactory,
+            @Value("${app.mqtt.client-id-prefix}") String clientIdPrefix,
+            @Value("${app.mqtt.inbound-topic}") String inboundTopic,
+            @Value("${app.mqtt.qos}") int qos) {
+        MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(
+                clientIdPrefix + "-subscriber",
+                mqttClientFactory,
+                inboundTopic);
+        adapter.setQos(qos);
+        adapter.setCompletionTimeout(5000);
+        adapter.setOutputChannel(mqttInboundChannel());
+        return adapter;
+    }
+
+    @Bean
+    @ServiceActivator(inputChannel = "mqttInboundChannel")
+    MessageHandler mqttInboundHandler(MqttMessageStore mqttMessageStore) {
+        return mqttMessageStore::updateFromMessage;
+    }
+}
