@@ -17,6 +17,13 @@ class MultiLayerPerceptron(
     var b1 = FloatArray(hiddenSize) { Random.nextFloat() * 2f - 1f }
     var b2 = FloatArray(outputSize) { Random.nextFloat() * 2f - 1f }
 
+    fun reset() {
+        w1 = FloatArray(inputSize * hiddenSize) { Random.nextFloat() * 2f - 1f }
+        w2 = FloatArray(hiddenSize * outputSize) { Random.nextFloat() * 2f - 1f }
+        b1 = FloatArray(hiddenSize) { Random.nextFloat() * 2f - 1f }
+        b2 = FloatArray(outputSize) { Random.nextFloat() * 2f - 1f }
+    }
+
     // Activation: Sigmoid for hidden, Softmax for output
     private fun sigmoid(x: Float): Float = (1.0 / (1.0 + exp(-x.toDouble()))).toFloat()
     private fun sigmoidDerivative(x: Float): Float = x * (1 - x)

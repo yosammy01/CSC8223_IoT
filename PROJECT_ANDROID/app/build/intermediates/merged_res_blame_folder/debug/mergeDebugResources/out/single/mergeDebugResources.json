@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "com.gsu.iot.pose.app-debug-44:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "com.gsu.iot.pose.app-main-46:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.gsu.iot.pose.app-debug-44:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "com.gsu.iot.pose.app-main-46:/mipmap-anydpi-v26/ic_launcher.xml"
+    }
+]

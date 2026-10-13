@@ -1,5 +1,9 @@
 package com.gsu.iot.pose.mlp
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
 object ModelManager {
     val localModel = MultiLayerPerceptron()
     val federatedModel = MultiLayerPerceptron()
@@ -8,7 +12,7 @@ object ModelManager {
         LOCAL, GLOBAL
     }
 
-    var activeModelForInference = ActiveModel.LOCAL
+    var activeModelForInference by mutableStateOf(ActiveModel.LOCAL)
         private set
 
     fun setActiveModel(model: ActiveModel) {
@@ -18,6 +22,11 @@ object ModelManager {
     fun trainBoth(features: FloatArray, label: Int) {
         localModel.train(features, label)
         federatedModel.train(features, label)
+    }
+
+    fun resetAll() {
+        localModel.reset()
+        federatedModel.reset()
     }
 
     fun predict(features: FloatArray): Int {
