@@ -17,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -96,6 +97,8 @@ enum class AppScreenMode {
 @Composable
 fun PoseClientScreen() {
     var screenMode by remember { mutableStateOf(AppScreenMode.INFERENCE) }
+    val context = LocalContext.current
+    var ipInput by remember { mutableStateOf(MqttClientManager.serverIp) }
 
     val targetSampleLimit = 50 // 50 training samples per pose
     val evalSampleLimit = 10   // 10 evaluation samples per pose
@@ -255,30 +258,31 @@ fun PoseClientScreen() {
         Text("Federated Pose Client", style = MaterialTheme.typography.headlineMedium)
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Connection Status
+        // Connection Status & Editable Server IP
         val isConnected = MqttClientManager.isConnected
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            Text(
-                "MQTT: ${if (isConnected) "Connected" else "Disconnected"}",
-                color = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                fontWeight = FontWeight.Bold
+            OutlinedTextField(
+                value = ipInput,
+                onValueChange = { ipInput = it },
+                label = { Text("Broker IP") },
+                singleLine = true,
+                modifier = Modifier.width(170.dp)
             )
-            if (!isConnected) {
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = { MqttClientManager.connect() },
-                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    modifier = Modifier.height(28.dp)
-                ) {
-                    Text("Retry", style = MaterialTheme.typography.labelSmall)
-                }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = { MqttClientManager.updateServerIp(context, ipInput) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isConnected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                )
+            ) {
+                Text(if (isConnected) "Connected" else "Connect")
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Navigation Tabs
         TabRow(selectedTabIndex = screenMode.ordinal) {

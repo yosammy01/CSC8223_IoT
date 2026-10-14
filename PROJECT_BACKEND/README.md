@@ -8,7 +8,7 @@ This API now includes Spring Integration MQTT support configured for a broker on
 
 - Broker URL: `tcp://localhost:1883`
 - Default publish topic: `java_backend/default`
-- Subscribed topics: `federated/local/weights` and `federated/telemetry`
+- Subscribed topic filters: `federated/local/weights/#` and `federated/telemetry/#`
 - Local weights are decoded using the Android 8-bit format, averaged in groups of
   `APP_FEDERATED_EXPECTED_CLIENTS` (default `2`), and published as binary payloads to
   `federated/global/weights`.
@@ -46,9 +46,16 @@ Endpoints:
   - Publishes `{"command":"START_TRAINING","use_quantization":true|false}` to
     the configured commands topic.
 
-Telemetry published by Android clients on `federated/telemetry` is relayed as
-the original JSON payload to dashboard WebSocket clients connected to
-`/ws/telemetry`.
+Android clients publish to per-client topics such as
+`federated/local/weights/EdgeClient_A` and `federated/telemetry/EdgeClient_A`.
+The backend subscribes to both topic trees, aggregates the binary local weights,
+and relays telemetry as the original JSON payload to dashboard WebSocket clients
+connected to `/ws/telemetry`.
+
+The Android clients connect directly to the MQTT broker; they do not currently
+call the backend REST API or WebSocket endpoints. Set `APP_MQTT_URL` to the same
+reachable broker address used by the Android clients when the backend and broker
+are not on the same host.
 
 ### Publish automatically when broker connection comes up
 

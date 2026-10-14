@@ -18,7 +18,7 @@ import org.json.JSONObject
 
 object MqttClientManager {
     private const val TAG = "MqttClientManager"
-    private const val SERVER_URI = "tcp://192.168.1.237:1883"
+    private const val DEFAULT_IP = ""
     private const val CLIENT_PREFIX = "EdgeClient_"
 
     private const val TOPIC_GLOBAL_WEIGHTS = "federated/global/weights"
@@ -28,44 +28,70 @@ object MqttClientManager {
 
     private var mqttClient: MqttAsyncClient? = null
     private var activeClientId: String = "EdgeClient_A"
+    private var activeClientIdSuffix: String = "A"
     private var isConnecting = false
+
+    var serverIp by mutableStateOf(DEFAULT_IP)
+        private set
 
     var isConnected by mutableStateOf(false)
         private set
 
     fun initialize(context: Context, clientIdSuffix: String = "A") {
         try {
+            activeClientIdSuffix = clientIdSuffix
+            val prefs = context.getSharedPreferences("MqttPrefs", Context.MODE_PRIVATE)
+            val savedIp = prefs.getString("server_ip", DEFAULT_IP) ?: DEFAULT_IP
+            serverIp = savedIp
+
             activeClientId = CLIENT_PREFIX + clientIdSuffix.filter { it.isLetterOrDigit() }
-            if (mqttClient != null && mqttClient?.isConnected == true) {
-                try { mqttClient?.disconnect() } catch (e: Exception) {}
+
+            if (savedIp.isNotBlank()) {
+                val fullServerUri = "tcp://$savedIp:1883"
+
+                if (mqttClient != null && mqttClient?.isConnected == true) {
+                    try { mqttClient?.disconnect() } catch (e: Exception) {}
+                }
+                isConnected = false
+                isConnecting = false
+                mqttClient = MqttAsyncClient(fullServerUri, activeClientId, MemoryPersistence())
+
+                mqttClient?.setCallback(object : MqttCallback {
+                    override fun connectionLost(cause: Throwable?) {
+                        Log.w(TAG, "Connection lost to MQTT Broker: ${cause?.message}")
+                        isConnecting = false
+                        isConnected = false
+                    }
+
+                    override fun messageArrived(topic: String?, message: MqttMessage?) {
+                        if (topic == null || message == null) return
+                        handleIncomingMessage(topic, message)
+                    }
+
+                    override fun deliveryComplete(token: IMqttDeliveryToken?) {
+                    }
+                })
             }
-            isConnected = false
-            isConnecting = false
-            mqttClient = MqttAsyncClient(SERVER_URI, activeClientId, MemoryPersistence())
-
-            mqttClient?.setCallback(object : MqttCallback {
-                override fun connectionLost(cause: Throwable?) {
-                    Log.w(TAG, "Connection lost to MQTT Broker: ${cause?.message}")
-                    isConnecting = false
-                    isConnected = false
-                }
-
-                override fun messageArrived(topic: String?, message: MqttMessage?) {
-                    if (topic == null || message == null) return
-                    handleIncomingMessage(topic, message)
-                }
-
-                override fun deliveryComplete(token: IMqttDeliveryToken?) {
-                }
-            })
         } catch (e: Exception) {
             Log.e(TAG, "Failed to initialize MqttAsyncClient", e)
         }
     }
 
+    fun updateServerIp(context: Context, newIp: String) {
+        val cleanIp = newIp.trim()
+        serverIp = cleanIp
+        val prefs = context.getSharedPreferences("MqttPrefs", Context.MODE_PRIVATE)
+        prefs.edit().putString("server_ip", cleanIp).apply()
+
+        initialize(context, activeClientIdSuffix)
+        if (cleanIp.isNotBlank()) {
+            connect()
+        }
+    }
+
     fun connect() {
-        val client = mqttClient ?: return
-        if (!client.isConnected) {
+        val client = mqttClient
+        if (client != null && !client.isConnected && serverIp.isNotBlank()) {
             isConnecting = true
             val options = MqttConnectOptions().apply {
                 isAutomaticReconnect = true
@@ -79,7 +105,7 @@ object MqttClientManager {
                     override fun onSuccess(asyncActionToken: IMqttToken?) {
                         isConnecting = false
                         isConnected = true
-                        Log.i(TAG, "Successfully connected to MQTT broker ($activeClientId)")
+                        Log.i(TAG, "Successfully connected to MQTT broker ($activeClientId @ $serverIp)")
                         subscribeToTopics()
                         publishTelemetry("Connected")
                     }
@@ -87,7 +113,7 @@ object MqttClientManager {
                     override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
                         isConnecting = false
                         isConnected = false
-                        Log.e(TAG, "Failed to connect to MQTT broker ($activeClientId): ${exception?.message}", exception)
+                        Log.e(TAG, "Failed to connect to MQTT broker ($activeClientId @ $serverIp): ${exception?.message}", exception)
                     }
                 })
             } catch (e: Exception) {

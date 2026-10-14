@@ -79,7 +79,7 @@ public class MqttIntegrationConfig {
         MqttPahoMessageDrivenChannelAdapter adapter = new MqttPahoMessageDrivenChannelAdapter(
                 clientIdPrefix + "-subscriber",
                 mqttClientFactory,
-            inboundTopic, localWeightsTopic);
+        topicFilter(inboundTopic), topicFilter(localWeightsTopic));
         adapter.setQos(qos);
         adapter.setCompletionTimeout(5000);
         adapter.setOutputChannel(mqttInboundChannel());
@@ -97,13 +97,13 @@ public class MqttIntegrationConfig {
         return message -> {
             mqttMessageStore.updateFromMessage(message);
             String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC, String.class);
-            if (localWeightsTopic.equals(topic)) {
+            if (topicMatches(localWeightsTopic, topic)) {
                 Object payload = message.getPayload();
                 if (!(payload instanceof byte[] bytes)) {
                     throw new IllegalArgumentException("Local federated weights must be an MQTT binary payload.");
                 }
                 aggregationService.accept(bytes);
-            } else if (telemetryTopic.equals(topic)) {
+            } else if (topicMatches(telemetryTopic, topic)) {
                 Object payload = message.getPayload();
                 String telemetry = payload instanceof byte[] bytes
                         ? new String(bytes, java.nio.charset.StandardCharsets.UTF_8)
@@ -111,5 +111,19 @@ public class MqttIntegrationConfig {
                 telemetryWebSocketHandler.broadcast(telemetry);
             }
         };
+    }
+
+    private static boolean topicMatches(String configuredTopic, String receivedTopic) {
+        if (configuredTopic == null || receivedTopic == null) {
+            return false;
+        }
+        String baseTopic = configuredTopic.endsWith("/#")
+                ? configuredTopic.substring(0, configuredTopic.length() - 2)
+                : configuredTopic;
+        return receivedTopic.equals(baseTopic) || receivedTopic.startsWith(baseTopic + "/");
+    }
+
+    private static String topicFilter(String configuredTopic) {
+        return configuredTopic.endsWith("/#") ? configuredTopic : configuredTopic + "/#";
     }
 }
