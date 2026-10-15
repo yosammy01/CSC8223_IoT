@@ -31,6 +31,8 @@ object MqttClientManager {
     private var activeClientIdSuffix: String = "A"
     private var isConnecting = false
 
+    var onLocalModelReloaded: (() -> Unit)? = null
+
     var serverIp by mutableStateOf(DEFAULT_IP)
         private set
 
@@ -142,7 +144,12 @@ object MqttClientManager {
         try {
             client.subscribe(TOPIC_GLOBAL_WEIGHTS, 1)
             client.subscribe(TOPIC_COMMANDS, 1)
-            Log.i(TAG, "Subscribed to global weights and command topics")
+            
+            // Subscribe to this specific client's local weights topic for server-backed local model reloads!
+            val myLocalTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
+            client.subscribe(myLocalTopic, 1)
+            
+            Log.i(TAG, "Subscribed to global weights, commands, and $myLocalTopic")
         } catch (e: Exception) {
             Log.e(TAG, "Exception during subscribe", e)
         }
@@ -185,12 +192,20 @@ object MqttClientManager {
     }
 
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
+        val myLocalTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
         when (topic) {
             TOPIC_GLOBAL_WEIGHTS -> {
                 Log.d(TAG, "Received global weights update from broker")
                 val quantizedWeights = message.payload
                 val dequantizedFloatArray = Quantizer.dequantize(quantizedWeights)
                 ModelManager.federatedModel.setWeights(dequantizedFloatArray)
+            }
+            myLocalTopic -> {
+                Log.d(TAG, "Received local model reload from broker for $activeClientId")
+                val quantizedWeights = message.payload
+                val dequantizedFloatArray = Quantizer.dequantize(quantizedWeights)
+                ModelManager.localModel.setWeights(dequantizedFloatArray)
+                onLocalModelReloaded?.invoke()
             }
             TOPIC_COMMANDS -> {
                 val payloadString = String(message.payload)

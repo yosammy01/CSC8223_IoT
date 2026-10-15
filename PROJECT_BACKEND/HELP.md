@@ -16,15 +16,11 @@ For further reference, please consider the following sections:
 * [Spring Integration WebSocket Module Reference Guide](https://docs.spring.io/spring-integration/reference/web-sockets.html)
 * [Spring Boot Testcontainers support](https://docs.spring.io/spring-boot/4.1.0/reference/testing/testcontainers.html#testing.testcontainers)
 * [Testcontainers Postgres Module Reference Guide](https://java.testcontainers.org/modules/databases/postgres/)
-* [Testcontainers Ollama Module Reference Guide](https://java.testcontainers.org/modules/testcontainers/)
 * [Spring Data JPA](https://docs.spring.io/spring-boot/4.1.0/reference/data/sql.html#data.sql.jpa-and-spring-data)
 * [Spring Boot DevTools](https://docs.spring.io/spring-boot/4.1.0/reference/using/devtools.html)
 * [Docker Compose Support](https://docs.spring.io/spring-boot/4.1.0/reference/features/dev-services.html#features.dev-services.docker-compose)
 * [Spring Integration](https://docs.spring.io/spring-boot/4.1.0/reference/messaging/spring-integration.html)
 * [Spring Security](https://docs.spring.io/spring-boot/4.1.0/reference/web/spring-security.html)
-* [Google GenAI](https://docs.spring.io/spring-ai/reference/api/chat/google-genai-chat.html)
-* [Google GenAI Embeddings](https://docs.spring.io/spring-ai/reference/api/embeddings/google-genai-embeddings.html)
-* [Ollama](https://docs.spring.io/spring-ai/reference/api/chat/ollama-chat.html)
 * [Testcontainers](https://java.testcontainers.org/)
 * [Spring Web](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html)
 * [WebSocket](https://docs.spring.io/spring-boot/4.1.0/reference/messaging/websockets.html)
@@ -54,7 +50,6 @@ These additional references should also help you:
 This project contains a Docker Compose file named `compose.yaml`. In this file, the following services have been
 defined:
 
-* ollama: [`ollama/ollama:latest`](https://hub.docker.com/r/ollama/ollama)
 * postgres: [`postgres:latest`](https://hub.docker.com/_/postgres)
 
 Please review the tags of the used images and set them to the same as you're running in production.
@@ -114,9 +109,8 @@ $ ./mvnw test -PnativeTest
 This project
 uses [Testcontainers at development time](https://docs.spring.io/spring-boot/4.1.0/reference/features/dev-services.html#features.dev-services.testcontainers).
 
-Testcontainers has been configured to use the following Docker images:
+Testcontainers has been configured to use the following Docker image:
 
-* [`ollama/ollama:latest`](https://hub.docker.com/r/ollama/ollama)
 * [`postgres:latest`](https://hub.docker.com/_/postgres)
 
 Please review the tags of the used images and set them to the same as you're running in production.
@@ -127,4 +121,3 @@ Due to Maven's design, elements are inherited from the parent POM to the project
 fine, it also inherits unwanted elements like `<license>` and `<developers>` from the parent. To prevent this, the
 project POM contains empty overrides for these elements. If you manually switch to a different parent and actually want
 the inheritance, you need to remove those overrides.
-

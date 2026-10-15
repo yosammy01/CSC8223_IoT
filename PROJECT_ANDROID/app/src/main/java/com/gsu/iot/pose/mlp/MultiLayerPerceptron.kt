@@ -7,7 +7,7 @@ class MultiLayerPerceptron(
     private val inputSize: Int = 8,
     private val hiddenSize: Int = 16,
     private val outputSize: Int = 6,
-    private val learningRate: Float = 0.01f
+    private val learningRate: Float = 0.1f
 ) {
     // Weights
     var w1 = FloatArray(inputSize * hiddenSize) { Random.nextFloat() * 2f - 1f }
@@ -105,6 +105,16 @@ class MultiLayerPerceptron(
             }
         }
     }
+
+    fun trainEpochs(dataset: Map<Int, List<FloatArray>>, epochs: Int = 15) {
+        for (e in 0 until epochs) {
+            dataset.forEach { (targetLabel, samples) ->
+                samples.forEach { sample ->
+                    train(sample, targetLabel)
+                }
+            }
+        }
+    }
     
     // Total weights size = (8*16) + (16*6) + 16 + 6 = 128 + 96 + 22 = 246 floats.
     fun getWeights(): FloatArray {
@@ -122,6 +132,7 @@ class MultiLayerPerceptron(
     }
     
     fun setWeights(allWeights: FloatArray) {
+        if (allWeights.size < 246) return
         var offset = 0
         allWeights.copyInto(w1, 0, offset, offset + w1.size)
         offset += w1.size

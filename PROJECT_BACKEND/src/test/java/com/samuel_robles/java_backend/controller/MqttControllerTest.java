@@ -99,6 +99,15 @@ class MqttControllerTest {
     }
 
     @Test
+    void republishGlobalModelPublishesCachedModel() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/model/republish"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("queued"));
+
+        verify(federatedAggregationService).republishLatestGlobalWeights();
+    }
+
+    @Test
     void modelToggleEndpointRejectsUnknownModel() throws Exception {
         mockMvc.perform(post("/api/mqtt/federated/model/toggle")
                 .contentType(MediaType.APPLICATION_JSON)

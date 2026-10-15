@@ -19,9 +19,12 @@ object ModelManager {
         activeModelForInference = model
     }
 
-    fun trainBoth(features: FloatArray, label: Int) {
+    fun trainLocal(features: FloatArray, label: Int) {
         localModel.train(features, label)
-        federatedModel.train(features, label)
+    }
+
+    fun trainLocalEpochsOnDataset(dataset: Map<Int, List<FloatArray>>, epochs: Int = 20) {
+        localModel.trainEpochs(dataset, epochs)
     }
 
     fun resetAll() {

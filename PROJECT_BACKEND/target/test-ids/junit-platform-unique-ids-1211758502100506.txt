@@ -1,0 +1,8 @@
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:modelToggleEndpointRejectsUnknownModel()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:latestEndpointReturnsLastMessageWhenPresent()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:trainingEndpointRejectsMissingQuantizationChoice()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:modelToggleEndpointPublishesSetModelCommand()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:republishGlobalModelPublishesCachedModel()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:trainingEndpointPublishesStartTrainingCommand()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:publishEndpointAcceptsMessage()]
+[engine:junit-jupiter]/[class:com.samuel_robles.java_backend.controller.MqttControllerTest]/[method:publishEndpointRejectsBlankPayload()]

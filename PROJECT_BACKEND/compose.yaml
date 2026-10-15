@@ -1,8 +1,4 @@
 services:
-  ollama:
-    image: 'ollama/ollama:latest'
-    ports:
-      - '11434'
   postgres:
     image: 'postgres:latest'
     environment:

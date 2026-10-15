@@ -11,8 +11,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.util.StringUtils;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
+import tools.jackson.databind.JsonNode;
 
 import com.samuel_robles.java_backend.federated.FederatedAggregationService;
 import com.samuel_robles.java_backend.mqtt.MqttMessageStore;
@@ -69,6 +69,20 @@ public class MqttController {
     @GetMapping("/federated/status")
     public FederatedAggregationService.FederatedStatus federatedStatus() {
         return federatedAggregationService.status();
+    }
+
+    @PostMapping("/federated/model/republish")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PublishResponse republishGlobalModel() {
+        federatedAggregationService.republishLatestGlobalWeights();
+        return new PublishResponse("queued", Instant.now());
+    }
+
+    @PostMapping("/federated/model/republish-all")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PublishResponse republishAllModels() {
+        federatedAggregationService.republishAllModels();
+        return new PublishResponse("queued", Instant.now());
     }
 
     @PostMapping("/federated/model/toggle")

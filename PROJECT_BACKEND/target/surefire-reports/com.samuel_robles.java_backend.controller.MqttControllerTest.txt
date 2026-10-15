@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.samuel_robles.java_backend.controller.MqttControllerTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.713 s -- in com.samuel_robles.java_backend.controller.MqttControllerTest
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 10.06 s -- in com.samuel_robles.java_backend.controller.MqttControllerTest

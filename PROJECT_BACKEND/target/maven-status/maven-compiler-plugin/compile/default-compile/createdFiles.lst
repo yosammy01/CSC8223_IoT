@@ -1,11 +1,14 @@
-com\samuel_robles\java_backend\controller\ApiController.class
 com\samuel_robles\java_backend\config\SecurityConfig.class
 com\samuel_robles\java_backend\federated\QuantizedWeightsCodec.class
 com\samuel_robles\java_backend\JavaBackendApplication.class
+com\samuel_robles\java_backend\controller\MqttController$TrainingRequest.class
+com\samuel_robles\java_backend\controller\MqttController$ModelSelectionRequest.class
+com\samuel_robles\java_backend\federated\FederatedModelSnapshotRepository.class
+com\samuel_robles\java_backend\controller\ApiController.class
+com\samuel_robles\java_backend\federated\FederatedModelSnapshot.class
 com\samuel_robles\java_backend\controller\ApiController$ApiInfoResponse.class
 com\samuel_robles\java_backend\websocket\TelemetryWebSocketHandler.class
 com\samuel_robles\java_backend\controller\MqttController$ActiveModel.class
 com\samuel_robles\java_backend\federated\FederatedAggregationService$FederatedStatus.class
 com\samuel_robles\java_backend\controller\ApiController$ApiHealthResponse.class
 com\samuel_robles\java_backend\federated\FederatedAggregationService.class
-com\samuel_robles\java_backend\controller\MqttController$ModelSelectionRequest.class

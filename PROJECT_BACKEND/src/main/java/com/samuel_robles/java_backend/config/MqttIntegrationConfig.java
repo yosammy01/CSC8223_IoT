@@ -11,6 +11,7 @@ import org.springframework.integration.mqtt.core.DefaultMqttPahoClientFactory;
 import org.springframework.integration.mqtt.core.MqttPahoClientFactory;
 import org.springframework.integration.mqtt.inbound.MqttPahoMessageDrivenChannelAdapter;
 import org.springframework.integration.mqtt.outbound.MqttPahoMessageHandler;
+import org.springframework.integration.mqtt.support.DefaultPahoMessageConverter;
 import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
@@ -82,6 +83,9 @@ public class MqttIntegrationConfig {
         topicFilter(inboundTopic), topicFilter(localWeightsTopic));
         adapter.setQos(qos);
         adapter.setCompletionTimeout(5000);
+        DefaultPahoMessageConverter converter = new DefaultPahoMessageConverter();
+        converter.setPayloadAsBytes(true);
+        adapter.setConverter(converter);
         adapter.setOutputChannel(mqttInboundChannel());
         return adapter;
     }
@@ -102,7 +106,17 @@ public class MqttIntegrationConfig {
                 if (!(payload instanceof byte[] bytes)) {
                     throw new IllegalArgumentException("Local federated weights must be an MQTT binary payload.");
                 }
-                aggregationService.accept(bytes);
+                String baseTopic = localWeightsTopic.endsWith("/#")
+                        ? localWeightsTopic.substring(0, localWeightsTopic.length() - 2)
+                        : localWeightsTopic;
+                String clientId = topic.startsWith(baseTopic + "/")
+                        ? topic.substring(baseTopic.length() + 1)
+                        : "";
+                aggregationService.cacheLocalWeights(clientId, bytes);
+                Boolean retained = message.getHeaders().get(MqttHeaders.RECEIVED_RETAINED, Boolean.class);
+                if (retained == null || !retained) {
+                    aggregationService.accept(clientId, bytes);
+                }
             } else if (topicMatches(telemetryTopic, topic)) {
                 Object payload = message.getPayload();
                 String telemetry = payload instanceof byte[] bytes

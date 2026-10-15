@@ -4,6 +4,8 @@ C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\controller\ApiController.java
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\controller\MqttController.java
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\FederatedAggregationService.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\FederatedModelSnapshot.java
+C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\FederatedModelSnapshotRepository.java
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\federated\QuantizedWeightsCodec.java
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\JavaBackendApplication.java
 C:\Users\samue\source\repos\CSC8223_IoT\PROJECT_BACKEND\src\main\java\com\samuel_robles\java_backend\mqtt\MqttConnectPublisher.java

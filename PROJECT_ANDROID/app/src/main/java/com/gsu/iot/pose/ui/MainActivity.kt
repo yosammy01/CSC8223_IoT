@@ -7,12 +7,16 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -90,6 +94,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+fun playBeepSound(toneType: Int = ToneGenerator.TONE_PROP_BEEP, durationMs: Int = 150) {
+    try {
+        val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+        toneGen.startTone(toneType, durationMs)
+        Handler(Looper.getMainLooper()).postDelayed({
+            try { toneGen.release() } catch (e: Exception) {}
+        }, (durationMs + 100).toLong())
+    } catch (e: Exception) {
+        Log.e("PoseClient", "Failed to play beep sound", e)
+    }
+}
+
 enum class AppScreenMode {
     INFERENCE, TRAINING, CALIBRATION_EVAL
 }
@@ -122,17 +138,23 @@ fun PoseClientScreen() {
         "Portrait Down", "Landscape Left", "Landscape Right"
     )
 
+    var isLocalModelLoadedFromMqtt by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        MqttClientManager.onLocalModelReloaded = {
+            isLocalModelLoadedFromMqtt = true
+        }
+    }
+
     // Current pose counts
     val currentTrainingPoseSamples = trainingDataset[activeTargetPose]?.size ?: 0
     val currentEvalPoseSamples = evalDataset[activeTargetPose]?.size ?: 0
 
-    // Helper function to retrain model on all stored training samples
+    // Helper function to retrain local model on all stored training samples
     fun retrainFromDataset() {
-        ModelManager.resetAll()
-        trainingDataset.forEach { (poseLabel, sampleList) ->
-            sampleList.forEach { sample ->
-                ModelManager.trainBoth(sample, poseLabel)
-            }
+        ModelManager.localModel.reset()
+        if (trainingDataset.isNotEmpty()) {
+            ModelManager.trainLocalEpochsOnDataset(trainingDataset, epochs = 20)
         }
     }
 
@@ -167,23 +189,13 @@ fun PoseClientScreen() {
         if ((screenMode == AppScreenMode.TRAINING || screenMode == AppScreenMode.CALIBRATION_EVAL) && isCountingDown) {
             for (sec in 3 downTo 1) {
                 countdownSeconds = sec
-                try {
-                    val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80)
-                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP, 100)
-                } catch (e: Exception) {
-                    Log.e("PoseClient", "Failed to play tick tone", e)
-                }
+                playBeepSound(ToneGenerator.TONE_PROP_BEEP, 100)
                 delay(1000L)
             }
             countdownSeconds = 0
             isCountingDown = false
             isRecordingActive = true
-            try {
-                val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-                toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 200)
-            } catch (e: Exception) {
-                Log.e("PoseClient", "Failed to play start tone", e)
-            }
+            playBeepSound(ToneGenerator.TONE_PROP_ACK, 200)
         }
     }
 
@@ -196,21 +208,17 @@ fun PoseClientScreen() {
                         val samplesList = trainingDataset.getOrPut(activeTargetPose) { mutableListOf() }
                         if (samplesList.size < targetSampleLimit) {
                             samplesList.add(features)
-                            ModelManager.trainBoth(features, activeTargetPose)
+                            ModelManager.trainLocal(features, activeTargetPose)
 
                             if (samplesList.size >= targetSampleLimit) {
                                 isRecordingActive = false
-                                try {
-                                    val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-                                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
-                                } catch (e: Exception) {
-                                    Log.e("PoseClient", "Failed to play completion tone", e)
-                                }
+                                retrainFromDataset()
+                                playBeepSound(ToneGenerator.TONE_PROP_BEEP2, 300)
                             }
 
                             val totalSamples = trainingDataset.values.sumOf { it.size }
                             if (totalSamples % 10 == 0) {
-                                val localWeights = ModelManager.federatedModel.getWeights()
+                                val localWeights = ModelManager.localModel.getWeights()
                                 val quantized = Quantizer.quantize(localWeights)
                                 MqttClientManager.publishLocalWeights(quantized)
                             }
@@ -227,12 +235,7 @@ fun PoseClientScreen() {
 
                             if (evalList.size >= evalSampleLimit) {
                                 isRecordingActive = false
-                                try {
-                                    val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
-                                    toneGen.startTone(ToneGenerator.TONE_PROP_BEEP2, 300)
-                                } catch (e: Exception) {
-                                    Log.e("PoseClient", "Failed to play completion tone", e)
-                                }
+                                playBeepSound(ToneGenerator.TONE_PROP_BEEP2, 300)
                             }
                         } else {
                             isRecordingActive = false
@@ -252,7 +255,8 @@ fun PoseClientScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Federated Pose Client", style = MaterialTheme.typography.headlineMedium)
@@ -288,7 +292,12 @@ fun PoseClientScreen() {
         TabRow(selectedTabIndex = screenMode.ordinal) {
             Tab(
                 selected = screenMode == AppScreenMode.INFERENCE,
-                onClick = { screenMode = AppScreenMode.INFERENCE; isRecordingActive = false; isCountingDown = false },
+                onClick = { 
+                    screenMode = AppScreenMode.INFERENCE
+                    isRecordingActive = false
+                    isCountingDown = false
+                    retrainFromDataset()
+                },
                 text = { Text("Inference") }
             )
             Tab(
@@ -333,14 +342,11 @@ fun PoseClientScreen() {
                 OutlinedButton(
                     onClick = {
                         trainingDataset.clear()
-                        evalDataset.clear()
                         ModelManager.resetAll()
                         predictedPose = "Unknown"
-                        localAccuracyResult = null
-                        globalAccuracyResult = null
                     }
                 ) {
-                    Text("Reset All Model Weights & Data")
+                    Text("Reset Model Weights & Training Data")
                 }
             }
 
@@ -416,6 +422,7 @@ fun PoseClientScreen() {
                 
                 poseNames.forEachIndexed { index, name ->
                     val samplesCount = trainingDataset[index]?.size ?: 0
+                    val isTrained = samplesCount >= targetSampleLimit || isLocalModelLoadedFromMqtt
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 2.dp)
@@ -428,13 +435,16 @@ fun PoseClientScreen() {
                                 isRecordingActive = false
                             }
                         )
-                        Text("$name ${if (samplesCount >= targetSampleLimit) "✓ (50/50)" else "($samplesCount/$targetSampleLimit)"}")
+                        Text("$name ${if (isTrained) "✓ (50/50)" else "($samplesCount/$targetSampleLimit)"}")
                     }
                 }
                 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     OutlinedButton(
                         onClick = {
                             trainingDataset.remove(activeTargetPose)
@@ -442,9 +452,10 @@ fun PoseClientScreen() {
                             isRecordingActive = false
                             retrainFromDataset()
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text("Reset ${poseNames[activeTargetPose]}")
+                        Text("Reset Pose", maxLines = 1)
                     }
 
                     OutlinedButton(
@@ -454,9 +465,10 @@ fun PoseClientScreen() {
                             isRecordingActive = false
                             ModelManager.resetAll()
                         },
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Text("Reset All")
+                        Text("Reset All", maxLines = 1)
                     }
                 }
             }
@@ -572,6 +584,20 @@ fun PoseClientScreen() {
                         )
                         Text("$name ${if (samplesCount >= evalSampleLimit) "✓ (10/10)" else "($samplesCount/$evalSampleLimit)"}")
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        evalDataset.clear()
+                        localAccuracyResult = null
+                        globalAccuracyResult = null
+                        isCountingDown = false
+                        isRecordingActive = false
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Reset Calibration Data")
                 }
             }
         }
