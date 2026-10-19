@@ -25,6 +25,8 @@ object FeatureExtractor {
     private const val NS_TO_MS = 1_000_000L
 
     private val gravityWindow = mutableListOf<SensorSample>()
+    private val accelWindow = mutableListOf<SensorSample>()
+    private val gyroWindow = mutableListOf<SensorSample>()
 
     data class SensorSample(val x: Float, val y: Float, val z: Float, val timestampNs: Long)
 
@@ -34,54 +36,85 @@ object FeatureExtractor {
     @Synchronized
     fun addGravitySample(x: Float, y: Float, z: Float, timestampNs: Long) {
         gravityWindow.add(SensorSample(x, y, z, timestampNs))
+        checkWindowAndExtract(timestampNs)
+    }
 
-        // Check if window is full based on timestamps
-        val oldest = gravityWindow.first().timestampNs
-        val newest = timestampNs
-        
-        val windowDurationMs = (newest - oldest) / NS_TO_MS
+    @Synchronized
+    fun addAccelSample(x: Float, y: Float, z: Float, timestampNs: Long) {
+        accelWindow.add(SensorSample(x, y, z, timestampNs))
+        checkWindowAndExtract(timestampNs)
+    }
+
+    @Synchronized
+    fun addGyroSample(x: Float, y: Float, z: Float, timestampNs: Long) {
+        gyroWindow.add(SensorSample(x, y, z, timestampNs))
+        checkWindowAndExtract(timestampNs)
+    }
+
+    private fun checkWindowAndExtract(latestTimestampNs: Long) {
+        val oldestGrav = gravityWindow.firstOrNull()?.timestampNs ?: Long.MAX_VALUE
+        val oldestAccel = accelWindow.firstOrNull()?.timestampNs ?: Long.MAX_VALUE
+        val oldestGyro = gyroWindow.firstOrNull()?.timestampNs ?: Long.MAX_VALUE
+
+        val oldest = minOf(oldestGrav, oldestAccel, oldestGyro)
+        if (oldest == Long.MAX_VALUE) return // All windows are empty
+
+        val windowDurationMs = (latestTimestampNs - oldest) / NS_TO_MS
 
         if (windowDurationMs >= WINDOW_SIZE_MS) {
             extractFeaturesAndClear()
         }
     }
 
-    private fun extractFeaturesAndClear() {
-        if (gravityWindow.isEmpty()) return
+    private fun computeStats(window: List<SensorSample>, normFactor: Float): FloatArray {
+        if (window.isEmpty()) return FloatArray(8) { 0f }
 
-        val count = gravityWindow.size
+        val count = window.size
 
         // Calculate means
-        val meanX = gravityWindow.sumOf { it.x.toDouble() } / count
-        val meanY = gravityWindow.sumOf { it.y.toDouble() } / count
-        val meanZ = gravityWindow.sumOf { it.z.toDouble() } / count
+        val meanX = window.sumOf { it.x.toDouble() } / count
+        val meanY = window.sumOf { it.y.toDouble() } / count
+        val meanZ = window.sumOf { it.z.toDouble() } / count
 
         // Calculate standard deviations
-        val stdX = sqrt(gravityWindow.sumOf { Math.pow(it.x - meanX, 2.0) } / count)
-        val stdY = sqrt(gravityWindow.sumOf { Math.pow(it.y - meanY, 2.0) } / count)
-        val stdZ = sqrt(gravityWindow.sumOf { Math.pow(it.z - meanZ, 2.0) } / count)
+        val stdX = sqrt(window.sumOf { Math.pow(it.x - meanX, 2.0) } / count)
+        val stdY = sqrt(window.sumOf { Math.pow(it.y - meanY, 2.0) } / count)
+        val stdZ = sqrt(window.sumOf { Math.pow(it.z - meanZ, 2.0) } / count)
 
         // Calculate magnitudes and its mean/std
-        val magnitudes = gravityWindow.map { sqrt((it.x * it.x + it.y * it.y + it.z * it.z).toDouble()) }
+        val magnitudes = window.map { sqrt((it.x * it.x + it.y * it.y + it.z * it.z).toDouble()) }
         val meanMag = magnitudes.sum() / count
         val stdMag = sqrt(magnitudes.sumOf { Math.pow(it - meanMag, 2.0) } / count)
 
-        // Compile feature vector (Normalized approximately)
-        // Values typically between -9.8 and 9.8 (gravity).
-        // Let's divide by 9.8f to roughly normalize them to [-1, 1].
-        val normFactor = 9.8f
-        val features = FloatArray(8)
-        features[0] = (meanX / normFactor).toFloat()
-        features[1] = (meanY / normFactor).toFloat()
-        features[2] = (meanZ / normFactor).toFloat()
-        features[3] = (stdX / normFactor).toFloat()
-        features[4] = (stdY / normFactor).toFloat()
-        features[5] = (stdZ / normFactor).toFloat()
-        features[6] = (meanMag / normFactor).toFloat()
-        features[7] = (stdMag / normFactor).toFloat()
+        return floatArrayOf(
+            (meanX / normFactor).toFloat(),
+            (meanY / normFactor).toFloat(),
+            (meanZ / normFactor).toFloat(),
+            (stdX / normFactor).toFloat(),
+            (stdY / normFactor).toFloat(),
+            (stdZ / normFactor).toFloat(),
+            (meanMag / normFactor).toFloat(),
+            (stdMag / normFactor).toFloat()
+        )
+    }
+
+    private fun extractFeaturesAndClear() {
+        // Output 24 features total: 8 Gravity, 8 Accel, 8 Gyro
+        val features = FloatArray(24)
+
+        // Gravity normalization (~9.8)
+        computeStats(gravityWindow, 9.8f).copyInto(features, 0)
+        
+        // Accelerometer normalization (~9.8)
+        computeStats(accelWindow, 9.8f).copyInto(features, 8)
+        
+        // Gyroscope normalization (~4.0 rad/s)
+        computeStats(gyroWindow, 4.0f).copyInto(features, 16)
 
         onFeaturesExtracted?.invoke(features)
 
         gravityWindow.clear()
+        accelWindow.clear()
+        gyroWindow.clear()
     }
 }

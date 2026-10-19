@@ -5,9 +5,9 @@
  * Role: The core Mathematical Neural Network Classifier.
  * 
  * Functions:
- * - A lightweight, natively written 2-layer Neural Network (8 -> 16 -> 6).
+ * - A lightweight, natively written 2-layer Neural Network (24 -> 16 -> 6).
  * - Forward Pass: Sigmoid activation for hidden layer, Softmax for output layer.
- * - Backward Pass: Computes Cross-Entropy loss and updates 246 parameters 
+ * - Backward Pass: Computes Cross-Entropy loss and updates 502 parameters 
  *   (W1, B1, W2, B2) using Stochastic Gradient Descent.
  * - `trainEpochs`: Supports batch training over multiple epochs (e.g., 20) for
  *   rapid and confident convergence on edge devices.
@@ -19,7 +19,7 @@ import kotlin.math.exp
 import kotlin.random.Random
 
 class MultiLayerPerceptron(
-    private val inputSize: Int = 8,
+    private val inputSize: Int = 24, // Expanded to 24 to handle Grav, Accel, and Gyro (8 features each)
     private val hiddenSize: Int = 16,
     private val outputSize: Int = 6,
     private val learningRate: Float = 0.1f
@@ -131,7 +131,7 @@ class MultiLayerPerceptron(
         }
     }
     
-    // Total weights size = (8*16) + (16*6) + 16 + 6 = 128 + 96 + 22 = 246 floats.
+    // Total weights size = (24*16) + (16*6) + 16 + 6 = 384 + 96 + 22 = 502 floats.
     fun getWeights(): FloatArray {
         val totalWeights = w1.size + w2.size + b1.size + b2.size
         val allWeights = FloatArray(totalWeights)
@@ -147,7 +147,10 @@ class MultiLayerPerceptron(
     }
     
     fun setWeights(allWeights: FloatArray) {
-        if (allWeights.size < 246) return
+        val expectedSize = w1.size + b1.size + w2.size + b2.size
+        if (allWeights.size != expectedSize) {
+            throw IllegalArgumentException("Expected exactly $expectedSize parameters, but got ${allWeights.size}")
+        }
         var offset = 0
         allWeights.copyInto(w1, 0, offset, offset + w1.size)
         offset += w1.size

@@ -10,17 +10,18 @@
  *
  * Key Responsibilities:
  *   1. Experiment Configuration: Dispatches `START_TRAINING` with
- *      `use_quantization: false` (32-bit baseline, 984 B) or
- *      `use_quantization: true` (8-bit quantized, 250 B) via
+ *      `use_quantization: false` (32-bit baseline, 2,008 B) or
+ *      `use_quantization: true` (8-bit quantized, 506 B) via
  *      `POST /api/mqtt/federated/training`.
  *   2. Active Inference Model Toggle: Dispatches `SET_MODEL` (`LOCAL` vs.
  *      `GLOBAL`) via `POST /api/mqtt/federated/model/toggle`.
- *   3. Snapshot & Reset Controls: Triggers server-backed model republishing
- *      (`POST /api/mqtt/federated/model/republish` and `/republish-all`) and
- *      edge model resets (`RESET_GLOBAL`, `RESET_ALL`).
+ *   3. Snapshot & Reset Controls: Triggers server-backed global model
+ *      republishing (`POST /api/mqtt/federated/model/republish`) and edge
+ *      model resets (`RESET_GLOBAL`, `RESET_ALL`). Local models and datasets
+ *      are stored strictly on-device on the phones.
  *   4. FedAvg Aggregation Monitor: Displays `completedRounds`,
  *      `receivedUpdates`, `pendingUpdates / expectedClients`, parameter count
- *      (246 floats), latest MQTT topic, and the orchestration event feed.
+ *      (502 floats), latest MQTT topic, and the orchestration event feed.
  * ============================================================================
  */
 import {
@@ -42,7 +43,7 @@ interface OrchestrationControlPanelProps {
   onStartTraining: (useQuantization: boolean) => void;
   onToggleModel: (model: ActiveModelType) => void;
   onRepublishGlobal: () => void;
-  onRepublishAll: () => void;
+  onResetFederatedStatus: () => void;
   onSendResetCommand: (resetType: 'RESET_GLOBAL' | 'RESET_ALL') => void;
   onRefreshStatus: () => void;
   onSimulateRoundStep: () => void;
@@ -59,7 +60,7 @@ export default function OrchestrationControlPanel({
   onStartTraining,
   onToggleModel,
   onRepublishGlobal,
-  onRepublishAll,
+  onResetFederatedStatus,
   onSendResetCommand,
   onRefreshStatus,
   onSimulateRoundStep,
@@ -107,8 +108,8 @@ export default function OrchestrationControlPanel({
               Active Pipeline:{' '}
               <strong className="text-indigo-700">
                 {selectedPipeline === '8BIT'
-                  ? '8-bit Quantized (250 B)'
-                  : '32-bit Baseline (984 B)'}
+                  ? '8-bit Quantized (506 B)'
+                  : '32-bit Baseline (2,008 B)'}
               </strong>
             </span>
           </div>
@@ -135,7 +136,7 @@ export default function OrchestrationControlPanel({
                       : 'bg-blue-200/80 text-blue-900'
                   }`}
                 >
-                  984 Bytes
+                  2,008 Bytes
                 </span>
               </div>
               <code
@@ -168,7 +169,7 @@ export default function OrchestrationControlPanel({
                       : 'bg-indigo-200/80 text-indigo-900'
                   }`}
                 >
-                  250 Bytes (-74.6%)
+                  506 Bytes (-74.8%)
                 </span>
               </div>
               <code
@@ -272,12 +273,12 @@ export default function OrchestrationControlPanel({
           </div>
         </div>
 
-        {/* 3. Model Snapshot Persistence & Reset Operations */}
+        {/* 3. Global Model Snapshot & Reset Operations */}
         <div className="space-y-2.5 pt-2 border-t border-slate-100">
           <h3 className="text-sm font-bold uppercase tracking-wider text-slate-700">
-            3. Server Snapshot Synchronization & Edge Model Reset
+            3. Global Model Broadcast &amp; Edge Model Reset
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               type="button"
               disabled={isDispatching}
@@ -286,15 +287,6 @@ export default function OrchestrationControlPanel({
               title="POST /api/mqtt/federated/model/republish — Republishes latest global weights to federated/global/weights"
             >
               ↻ Republish Global
-            </button>
-            <button
-              type="button"
-              disabled={isDispatching}
-              onClick={onRepublishAll}
-              className="px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-colors cursor-pointer"
-              title="POST /api/mqtt/federated/model/republish-all — Republishes global + per-client local models from PostgreSQL snapshot repository"
-            >
-              ⇄ Sync All Models
             </button>
             <button
               type="button"
@@ -345,6 +337,15 @@ export default function OrchestrationControlPanel({
                 className="text-xs px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium cursor-pointer"
               >
                 Refresh
+              </button>
+              <button
+                type="button"
+                disabled={isDispatching}
+                onClick={onResetFederatedStatus}
+                className="text-xs px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-medium cursor-pointer"
+                title="Clear the FedAvg barrier and counters without deleting the global model"
+              >
+                Reset FedAvg
               </button>
             </div>
           </div>
@@ -402,7 +403,7 @@ export default function OrchestrationControlPanel({
                 <span className="text-xs font-normal text-slate-500">floats</span>
               </div>
               <div className="text-[11px] text-slate-400">
-                8 → 16 → 6 Kotlin MLP
+                24 → 16 → 6 Kotlin MLP
               </div>
             </div>
           </div>
@@ -470,4 +471,3 @@ export default function OrchestrationControlPanel({
     </section>
   );
 }
-

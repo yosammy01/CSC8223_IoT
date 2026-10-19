@@ -12,12 +12,23 @@ import java.nio.ByteOrder;
  */
 public final class QuantizedWeightsCodec {
 
+    public static final int EXPECTED_WEIGHT_COUNT = 502;
+    public static final int QUANTIZED_PAYLOAD_SIZE = Float.BYTES + EXPECTED_WEIGHT_COUNT;
+    public static final int RAW_PAYLOAD_SIZE = EXPECTED_WEIGHT_COUNT * Float.BYTES;
+
     private QuantizedWeightsCodec() {
     }
 
     public static float[] decode(byte[] payload) {
-        if (payload == null || payload.length <= Float.BYTES) {
-            throw new IllegalArgumentException("A quantized model must contain maxAbs and at least one weight.");
+        if (payload == null) {
+            throw new IllegalArgumentException("A model payload is required.");
+        }
+        if (payload.length == RAW_PAYLOAD_SIZE) {
+            return decodeRaw(payload);
+        }
+        if (payload.length != QUANTIZED_PAYLOAD_SIZE) {
+            throw new IllegalArgumentException(
+                    "A model payload must be exactly 506 bytes (8-bit) or 2008 bytes (32-bit).");
         }
 
         float maxAbs = ByteBuffer.wrap(payload, 0, Float.BYTES)
@@ -28,9 +39,21 @@ public final class QuantizedWeightsCodec {
         }
 
         float scale = maxAbs / 127.0f;
-        float[] weights = new float[payload.length - Float.BYTES];
+        float[] weights = new float[EXPECTED_WEIGHT_COUNT];
         for (int i = 0; i < weights.length; i++) {
             weights[i] = payload[Float.BYTES + i] * scale;
+        }
+        return weights;
+    }
+
+    private static float[] decodeRaw(byte[] payload) {
+        ByteBuffer buffer = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN);
+        float[] weights = new float[EXPECTED_WEIGHT_COUNT];
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = buffer.getFloat();
+            if (!Float.isFinite(weights[i])) {
+                throw new IllegalArgumentException("Raw model weights must be finite.");
+            }
         }
         return weights;
     }

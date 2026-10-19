@@ -87,24 +87,15 @@ class SensorService : Service(), SensorEventListener {
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null) return
 
-        val isUsingGravity = (gravitySensor != null)
         when (event.sensor.type) {
             Sensor.TYPE_GRAVITY -> {
-                val x = event.values[0]
-                val y = event.values[1]
-                val z = event.values[2]
-                FeatureExtractor.addGravitySample(x, y, z, event.timestamp)
+                FeatureExtractor.addGravitySample(event.values[0], event.values[1], event.values[2], event.timestamp)
             }
             Sensor.TYPE_ACCELEROMETER -> {
-                if (!isUsingGravity) {
-                    val x = event.values[0]
-                    val y = event.values[1]
-                    val z = event.values[2]
-                    FeatureExtractor.addGravitySample(x, y, z, event.timestamp)
-                }
+                FeatureExtractor.addAccelSample(event.values[0], event.values[1], event.values[2], event.timestamp)
             }
             Sensor.TYPE_GYROSCOPE -> {
-                // FeatureExtractor.addGyroscopeSample(...)
+                FeatureExtractor.addGyroSample(event.values[0], event.values[1], event.values[2], event.timestamp)
             }
         }
     }

@@ -9,10 +9,10 @@
  *
  * Key Features:
  *   1. Wire Format Breakdown: Visualizes the 32-bit float baseline payload
- *      (246 * 4 B = 984 Bytes) vs. the 8-bit quantized wire format implemented
+ *      (502 * 4 B = 2,008 Bytes) vs. the 8-bit quantized wire format implemented
  *      in `Quantizer.kt` and `QuantizedWeightsCodec.java` (4-byte Big-Endian
- *      `maxAbs` float header + 246 signed `int8` bytes = 250 Bytes), achieving
- *      a 74.59% payload reduction (3.94x compression ratio).
+ *      `maxAbs` float header + 502 signed `int8` bytes = 506 Bytes), achieving
+ *      a 74.80% payload reduction (3.97x compression ratio).
  *   2. Cumulative MQTT Bandwidth Calculator: Computes total bytes transmitted
  *      and saved across live or projected Federated Averaging rounds.
  *   3. Interactive Codec Inspector: Runs sample MLP weights through the exact
@@ -50,7 +50,7 @@ export default function QuantizationContributionSection({
   global8BitMacroF1,
   global32BitMacroF1,
 }: QuantizationContributionSectionProps) {
-  const [projectedRounds, setProjectedRounds] = useState<number>(15);
+  const [projectedRounds, setProjectedRounds] = useState<number>(0);
   const [sampleWeights, setSampleWeights] = useState<number[]>(
     DEFAULT_SAMPLE_WEIGHTS
   );
@@ -127,14 +127,14 @@ export default function QuantizationContributionSection({
                 Baseline 32-Bit IEEE-754 Float Array (Uncompressed)
               </span>
               <span className="font-mono font-extrabold text-slate-900">
-                {FLOAT32_PAYLOAD_BYTES} Bytes / update
+                {FLOAT32_PAYLOAD_BYTES.toLocaleString()} Bytes / update
               </span>
             </div>
             <div className="w-full h-7 bg-blue-600 rounded-lg flex items-center justify-center text-[11px] font-mono font-bold text-white shadow-inner">
-              246 × 4-Byte Float32 Weights = 984 Bytes (100%)
+              502 × 4-Byte Float32 Weights = 2,008 Bytes (100%)
             </div>
             <div className="text-[11px] text-slate-500">
-               Breakdown: W1 (128×4B = 512B) + b1 (16×4B = 64B) + W2 (96×4B = 384B) + b2
+              Breakdown: W1 (384×4B = 1,536B) + b1 (16×4B = 64B) + W2 (96×4B = 384B) + b2
               (6×4B = 24B)
             </div>
           </div>
@@ -146,7 +146,7 @@ export default function QuantizationContributionSection({
                 Implemented 8-Bit Symmetric Min-Max Quantized Wire Format
               </span>
               <span className="font-mono font-extrabold text-indigo-700">
-                {INT8_QUANTIZED_PAYLOAD_BYTES} Bytes / update (-74.59%)
+                {INT8_QUANTIZED_PAYLOAD_BYTES} Bytes / update (-74.80%)
               </span>
             </div>
             <div className="w-full bg-slate-200 rounded-lg h-7 overflow-hidden flex">
@@ -158,18 +158,18 @@ export default function QuantizationContributionSection({
                 4B
               </div>
               <div
-                style={{ width: '21.4%' }}
-                title="246 × 1-Byte Signed Int8 Weights [-127, 127]"
+                style={{ width: '21.2%' }}
+                title="502 × 1-Byte Signed Int8 Weights [-127, 127]"
                 className="bg-indigo-600 h-full flex items-center justify-center text-[10px] font-mono font-bold text-white"
               >
-                246B (int8)
+                502B (int8)
               </div>
               <div className="flex-1 flex items-center pl-3 text-[11px] font-mono text-emerald-700 font-bold bg-emerald-50">
-                Saved: 734 Bytes per MQTT transmission
+                Saved: 1,502 Bytes per MQTT transmission
               </div>
             </div>
             <div className="text-[11px] text-indigo-900/80 font-mono">
-              Wire Layout: [Bytes 0..3: Big-Endian Float32 maxAbs] + [Bytes 4..249: 246 ×
+              Wire Layout: [Bytes 0..3: Big-Endian Float32 maxAbs] + [Bytes 4..505: 502 ×
               Signed Int8 in [-127, 127]]
             </div>
           </div>
@@ -190,24 +190,24 @@ export default function QuantizationContributionSection({
                   <td className="py-2 px-3 font-sans font-medium text-slate-700">
                     MQTT Payload Size (per update)
                   </td>
-                  <td className="py-2 px-3 text-right">984 B</td>
+                  <td className="py-2 px-3 text-right">2,008 B</td>
                   <td className="py-2 px-3 text-right font-bold text-indigo-700">
-                    250 B
+                    506 B
                   </td>
                   <td className="py-2 px-3 text-right font-bold text-emerald-700">
-                    -734 B (-74.59%)
+                    -1,502 B (-74.80%)
                   </td>
                 </tr>
                 <tr>
                   <td className="py-2 px-3 font-sans font-medium text-slate-700">
                     Traffic per FedAvg Round (2 up + 1 global)
                   </td>
-                  <td className="py-2 px-3 text-right">2,952 B</td>
+                  <td className="py-2 px-3 text-right">6,024 B</td>
                   <td className="py-2 px-3 text-right font-bold text-indigo-700">
-                    750 B
+                    1,518 B
                   </td>
                   <td className="py-2 px-3 text-right font-bold text-emerald-700">
-                    -2,202 B / round
+                    -4,506 B / round
                   </td>
                 </tr>
                 <tr>
@@ -265,7 +265,7 @@ export default function QuantizationContributionSection({
                   <input
                     id="rounds-slider"
                     type="range"
-                    min={1}
+                    min={0}
                     max={100}
                     value={projectedRounds}
                     onChange={(e) => setProjectedRounds(Number(e.target.value))}

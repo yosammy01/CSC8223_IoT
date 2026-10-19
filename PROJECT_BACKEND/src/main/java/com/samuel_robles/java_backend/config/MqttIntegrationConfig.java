@@ -102,11 +102,10 @@ public class MqttIntegrationConfig {
             TelemetryWebSocketHandler telemetryWebSocketHandler,
             @Value("${app.mqtt.local-weights-topic:federated/local/weights}") String localWeightsTopic,
             @Value("${app.mqtt.telemetry-topic:federated/telemetry}") String telemetryTopic) {
-        return message -> {
-            mqttMessageStore.updateFromMessage(message);
-            String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC, String.class);
-            if (topicMatches(localWeightsTopic, topic)) {
-                Object payload = message.getPayload();
+            return message -> {
+                String topic = message.getHeaders().get(MqttHeaders.RECEIVED_TOPIC, String.class);
+                if (topicMatches(localWeightsTopic, topic)) {
+                    Object payload = message.getPayload();
                 if (!(payload instanceof byte[] bytes)) {
                     throw new IllegalArgumentException("Local federated weights must be an MQTT binary payload.");
                 }
@@ -116,17 +115,20 @@ public class MqttIntegrationConfig {
                 String clientId = topic.startsWith(baseTopic + "/")
                         ? topic.substring(baseTopic.length() + 1)
                         : "";
-                aggregationService.cacheLocalWeights(clientId, bytes);
+                aggregationService.validateClientId(clientId);
                 Boolean retained = message.getHeaders().get(MqttHeaders.RECEIVED_RETAINED, Boolean.class);
                 if (retained == null || !retained) {
                     aggregationService.accept(clientId, bytes);
                 }
             } else if (topicMatches(telemetryTopic, topic)) {
+                mqttMessageStore.updateFromMessage(message);
                 Object payload = message.getPayload();
                 String telemetry = payload instanceof byte[] bytes
                         ? new String(bytes, java.nio.charset.StandardCharsets.UTF_8)
                         : String.valueOf(payload);
                 telemetryWebSocketHandler.broadcast(telemetry);
+            } else {
+                mqttMessageStore.updateFromMessage(message);
             }
         };
     }

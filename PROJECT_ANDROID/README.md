@@ -19,7 +19,7 @@ This Android application serves as the Edge Client for a complete Federated Lear
 Android's `SensorManager` runs as a Foreground Service, ensuring it never sleeps. It collects Gravity/Accelerometer data and feeds it into a **100-millisecond sliding window**. The window extracts an 8-element feature array (Mean X/Y/Z, StdDev X/Y/Z, Mean Mag, StdDev Mag) normalized by 9.8.
 
 ### 2. The Machine Learning Model (`MultiLayerPerceptron.kt` & `ModelManager.kt`)
-A natively written Kotlin Neural Network consisting of 8 inputs, 16 hidden neurons (Sigmoid), and 6 output neurons (Softmax). It contains exactly 246 float parameters. Multi-epoch Stochastic Gradient Descent (SGD) allows the model to converge rapidly on the mobile CPU.
+A natively written Kotlin Neural Network consisting of 24 inputs (8 features per sensor: Gravity, Accelerometer, Gyroscope), 16 hidden neurons (Sigmoid), and 6 output neurons (Softmax). It contains exactly 502 float parameters. Multi-epoch Stochastic Gradient Descent (SGD) allows the model to converge rapidly on the mobile CPU.
 
 ### 3. Federated Orchestration (`MqttClientManager.kt` & `Quantizer.kt`)
 The app utilizes Eclipse Paho to maintain a persistent connection to a Mosquitto MQTT Broker. 

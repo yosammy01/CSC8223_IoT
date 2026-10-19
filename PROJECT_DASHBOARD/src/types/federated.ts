@@ -16,10 +16,10 @@
  *     and broadcast over WebSockets (`/ws/telemetry`) by `TelemetryWebSocketHandler`.
  *   - FederatedStatus & LatestMessageResponse: Matches the Java records returned
  *     by `MqttController.java` (`/api/mqtt/federated/status` & `/api/mqtt/latest`).
- *   - MLP & Quantization Constants: Matches `MultiLayerPerceptron.kt` (8 inputs ->
- *     16 hidden -> 6 outputs = 246 total float weights = 984 bytes uncompressed)
+ *   - MLP & Quantization Constants: Matches `MultiLayerPerceptron.kt` (24 inputs ->
+ *     16 hidden -> 6 outputs = 502 total float weights = 2,008 bytes uncompressed)
  *     and `Quantizer.kt` / `QuantizedWeightsCodec.java` (4-byte maxAbs header +
- *     246 signed int8 bytes = 250 bytes quantized, a 74.59% payload reduction).
+ *     502 signed int8 bytes = 506 bytes quantized, a 74.80% payload reduction).
  * ============================================================================
  */
 export type PoseName =
@@ -44,12 +44,24 @@ export interface PoseDefinition {
   rotationStyle: string;
 }
 
+export interface ClientDatasetStatus {
+  trainCounts: number[]; // length 6 (0..50 samples per pose)
+  calibCounts: number[]; // length 6 (0..10 samples per pose)
+  localAccuracy: number | null;
+  globalAccuracy: number | null;
+}
+
 export interface TelemetryMessage {
   clientId: string;
   pose: string;
   timestamp: number;
   activeModel?: ActiveModelType;
   confidence?: number;
+  trainCounts?: number[];
+  calibCounts?: number[];
+  evalCounts?: number[];
+  localAccuracy?: number | null;
+  globalAccuracy?: number | null;
 }
 
 export interface FederatedStatus {
@@ -167,24 +179,26 @@ export const POSE_DEFINITIONS: PoseDefinition[] = [
     index: 4,
     name: 'Landscape Left',
     shortName: 'Landscape Left',
-    definition: 'Phone is vertical with the left edge pointing upward.',
+    definition:
+      'The top of the phone points to the left, and the right edge points upward.',
     primaryClient: 'CLIENT_B',
-    gravityHint: 'g_x ≈ -9.8 m/s² ( -1.0g )',
-    rotationStyle: 'rotateX(0deg) rotateZ(90deg)',
+    gravityHint: 'g_x ≈ +9.8 m/s² ( +1.0g )',
+    rotationStyle: 'rotateX(0deg) rotateZ(-90deg)',
   },
   {
     index: 5,
     name: 'Landscape Right',
     shortName: 'Landscape Right',
-    definition: 'Phone is vertical with the right edge pointing upward.',
+    definition:
+      'The top of the phone points to the right, and the left edge points upward.',
     primaryClient: 'CLIENT_B',
-    gravityHint: 'g_x ≈ +9.8 m/s² ( +1.0g )',
-    rotationStyle: 'rotateX(0deg) rotateZ(-90deg)',
+    gravityHint: 'g_x ≈ -9.8 m/s² ( -1.0g )',
+    rotationStyle: 'rotateX(0deg) rotateZ(90deg)',
   },
 ];
 
 // Constants matching MultiLayerPerceptron.kt, Quantizer.kt, and QuantizedWeightsCodec.java
-export const MLP_INPUT_FEATURES = 8;
+export const MLP_INPUT_FEATURES = 24; // 8 Gravity + 8 Accelerometer + 8 Gyroscope features
 export const MLP_HIDDEN_NEURONS = 16;
 export const MLP_OUTPUT_CLASSES = 6;
 export const MLP_LEARNING_RATE = 0.1;
@@ -192,11 +206,11 @@ export const MLP_TOTAL_WEIGHTS =
   MLP_INPUT_FEATURES * MLP_HIDDEN_NEURONS +
   MLP_HIDDEN_NEURONS +
   MLP_HIDDEN_NEURONS * MLP_OUTPUT_CLASSES +
-  MLP_OUTPUT_CLASSES; // 128 + 16 + 96 + 6 = 246 floats
+  MLP_OUTPUT_CLASSES; // 384 + 16 + 96 + 6 = 502 floats
 
-export const FLOAT32_PAYLOAD_BYTES = MLP_TOTAL_WEIGHTS * 4; // 984 bytes
-export const INT8_QUANTIZED_PAYLOAD_BYTES = 4 + MLP_TOTAL_WEIGHTS; // 4-byte maxAbs header + 246 int8 bytes = 250 bytes
+export const FLOAT32_PAYLOAD_BYTES = MLP_TOTAL_WEIGHTS * 4; // 2,008 bytes
+export const INT8_QUANTIZED_PAYLOAD_BYTES = 4 + MLP_TOTAL_WEIGHTS; // 4-byte maxAbs header + 502 int8 bytes = 506 bytes
 export const PAYLOAD_REDUCTION_PERCENT =
-  ((FLOAT32_PAYLOAD_BYTES - INT8_QUANTIZED_PAYLOAD_BYTES) / FLOAT32_PAYLOAD_BYTES) * 100; // 74.5935%
-export const COMPRESSION_RATIO = FLOAT32_PAYLOAD_BYTES / INT8_QUANTIZED_PAYLOAD_BYTES; // 3.936x
+  ((FLOAT32_PAYLOAD_BYTES - INT8_QUANTIZED_PAYLOAD_BYTES) / FLOAT32_PAYLOAD_BYTES) * 100; // 74.8008%
+export const COMPRESSION_RATIO = FLOAT32_PAYLOAD_BYTES / INT8_QUANTIZED_PAYLOAD_BYTES; // 3.9684x
 

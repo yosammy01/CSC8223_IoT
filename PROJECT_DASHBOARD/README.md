@@ -38,9 +38,9 @@ The system is partitioned into three tiers that strictly enforce the **Federated
    - `TelemetryWebSocketHandler.java` broadcasts live edge pose telemetry to connected web clients over `/ws/telemetry`.
 
 3. **Visualization & Control Tier (`PROJECT_DASHBOARD`)**:
-   - Streams live pose telemetry from `/ws/telemetry` and renders real-time 3D-styled spatial orientation cards for **Client A** and **Client B**.
+   - Streams live pose telemetry and dataset statuses (`trainCounts`, `calibCounts`, `localAccuracy`, `globalAccuracy`) from `/ws/telemetry` and renders real-time 3D-styled spatial orientation cards for **Client A** and **Client B**.
    - Polls `/api/mqtt/federated/status` and `/api/mqtt/latest` to track completed FedAvg rounds, received client updates, and round barrier synchronization.
-   - Dispatches remote MQTT control payloads (`START_TRAINING`, `SET_MODEL`, `RESET_GLOBAL`, `RESET_ALL`) and model snapshot sync requests (`/api/mqtt/federated/model/republish` & `/republish-all`).
+   - Dispatches remote MQTT control payloads (`START_TRAINING`, `SET_MODEL`, `RESET_GLOBAL`, `RESET_ALL`) and global model broadcast requests (`/api/mqtt/federated/model/republish`). Local models and their training/calibration datasets remain stored locally on the phones.
    - Computes and visualizes **Overall Accuracy**, **Per-Class Accuracy & F1**, **Macro-F1 Score**, **$6 \times 6$ Confusion Matrices**, and **8-Bit Quantization Payload Reduction**.
 
 ---
@@ -55,8 +55,8 @@ Neither client sees the complete 6-pose classification problem during local trai
 | `1` | **Screen Down** | Phone lies flat with the screen facing downward. | $g_z \approx -9.8\text{ m/s}^2$ | **50 samples** | 0 *(unseen)* | 10 samples / phone |
 | `2` | **Portrait Up** | Phone is vertical with the top edge pointing upward. | $g_y \approx +9.8\text{ m/s}^2$ | **50 samples** | 0 *(unseen)* | 10 samples / phone |
 | `3` | **Portrait Down** | Phone is vertical with the top edge pointing downward. | $g_y \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
-| `4` | **Landscape Left** | Phone is vertical with the left edge pointing upward. | $g_x \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
-| `5` | **Landscape Right** | Phone is vertical with the right edge pointing upward. | $g_x \approx +9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
+| `4` | **Landscape Left** | The top of the phone points to the left, and the right edge points upward. | $g_x \approx +9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
+| `5` | **Landscape Right** | The top of the phone points to the right, and the left edge points upward. | $g_x \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
 
 ---
 
@@ -64,37 +64,37 @@ Neither client sees the complete 6-pose classification problem during local trai
 
 Matching `FeatureExtractor.kt` and `MultiLayerPerceptron.kt` in `PROJECT_ANDROID`:
 
-- **Sliding Window Length**: `100 ms` non-overlapping window of 3-axis gravity samples.
-- **Input Layer ($8$ features)**:
-  $$\mathbf{x} = \frac{1}{9.8}\left[\mu_x, \mu_y, \mu_z, \sigma_x, \sigma_y, \sigma_z, \mu_{\|\mathbf{g}\|}, \sigma_{\|\mathbf{g}\|}\right] \in \mathbb{R}^8$$
+- **Sliding Window Length**: `100 ms` non-overlapping window of 3-axis Gravity, Accelerometer, and Gyroscope samples.
+- **Input Layer ($24$ features)**:
+  $$8\text{ Gravity features} + 8\text{ Accelerometer features} + 8\text{ Gyroscope features} = 24\text{ normalized features}$$
 - **Hidden Layer ($16$ neurons)**: Fully connected layer with Sigmoid activation $\sigma(z) = \frac{1}{1 + e^{-z}}$.
-  - Weights $W_1 \in \mathbb{R}^{8 \times 16}$ ($128$ floats), Biases $b_1 \in \mathbb{R}^{16}$ ($16$ floats).
+  - Weights $W_1 \in \mathbb{R}^{24 \times 16}$ ($384$ floats), Biases $b_1 \in \mathbb{R}^{16}$ ($16$ floats).
 - **Output Layer ($6$ classes)**: Fully connected layer with numerically stabilized Softmax activation.
   - Weights $W_2 \in \mathbb{R}^{16 \times 6}$ ($96$ floats), Biases $b_2 \in \mathbb{R}^6$ ($6$ floats).
 - **Total Trainable Parameters ($N$)**:
-  $$N = 128 + 16 + 96 + 6 = 246\text{ floats}$$
+  $$N = 384 + 16 + 96 + 6 = 502\text{ floats}$$
 - **Training Rule**: Cross-entropy loss with stochastic gradient descent ($\eta = 0.1$), publishing quantized weight updates every 10 recorded samples and running 20 epochs over the local dataset upon pose completion.
 
 ---
 
 ## 4. Technical Contribution: 8-Bit Symmetric Min-Max Weight Quantization
 
-Standard Federated Averaging transmits dense 32-bit IEEE-754 floating-point weight arrays ($246 \times 4\text{ bytes} = 984\text{ bytes}$ per update). To reduce communication overhead on mobile IoT clients, `Quantizer.kt` and `QuantizedWeightsCodec.java` implement **8-Bit Symmetric Min-Max Quantization**:
+Standard Federated Averaging transmits dense 32-bit IEEE-754 floating-point weight arrays ($502 \times 4\text{ bytes} = 2,008\text{ bytes}$ per update). To reduce communication overhead on mobile IoT clients, `Quantizer.kt` and `QuantizedWeightsCodec.java` implement **8-Bit Symmetric Min-Max Quantization**:
 
 1. **On-Device Quantization (`Quantizer.quantize`)**:
    - Computes $\text{maxAbs} = \max_{i} |w_i|$ (with $10^{-9}$ floor to prevent division by zero).
    - Computes scaling factor $s = \frac{127.0}{\text{maxAbs}}$.
    - Clamps and casts each weight into a signed 8-bit integer:
      $$q_i = \text{clamp}(\text{trunc}(w_i \cdot s), -127, 127) \in [-127, 127]$$
-   - Packs a **250-byte binary MQTT payload**:
+   - Packs a **506-byte binary MQTT payload**:
      - `Bytes [0..3]`: 4-byte Big-Endian IEEE-754 float `maxAbs`.
-     - `Bytes [4..249]`: 246 signed `int8` weight values.
+     - `Bytes [4..505]`: 502 signed `int8` weight values.
 2. **Server Dequantization & Aggregation (`QuantizedWeightsCodec.decode` & `encode`)**:
-   - Reconstructs $\hat{w}_i = q_i \cdot \frac{\text{maxAbs}}{127.0}$, averages updates across clients via FedAvg, and re-encodes the aggregated global model into the 250-byte wire format.
+   - Reconstructs $\hat{w}_i = q_i \cdot \frac{\text{maxAbs}}{127.0}$, averages updates across clients via FedAvg, and re-encodes the aggregated global model into the 506-byte wire format.
 3. **Payload Efficiency**:
-   - **32-Bit Baseline Payload**: `984 Bytes`
-   - **8-Bit Quantized Payload**: `250 Bytes`
-   - **Payload Size Reduction**: **74.59%** ($3.94\times$ compression ratio), saving `734 Bytes` per model transmission (`2,202 Bytes` saved per 2-client FedAvg round).
+   - **32-Bit Baseline Payload**: `2,008 Bytes`
+   - **8-Bit Quantized Payload**: `506 Bytes`
+   - **Payload Size Reduction**: **74.80%** ($3.97\times$ compression ratio), saving `1,502 Bytes` per model transmission (`4,506 Bytes` saved per 2-client FedAvg round).
 
 ---
 
@@ -117,12 +117,12 @@ The dashboard supports both:
 | Protocol | Endpoint / Topic | Direction | Payload Format & Purpose |
 | :--- | :--- | :--- | :--- |
 | **WebSocket** | `ws://localhost:8080/ws/telemetry` | Server → Dashboard | `{"clientId":"EdgeClient_A","pose":"Screen Up","timestamp":1729340000000}` |
-| **REST GET** | `/api/mqtt/federated/status` | Server → Dashboard | `{"receivedUpdates":4,"completedRounds":2,"pendingUpdates":0,"expectedClients":2,"globalWeightCount":246,"lastAggregationAt":"..."}` |
+| **REST GET** | `/api/mqtt/federated/status` | Server → Dashboard | `{"receivedUpdates":4,"completedRounds":2,"pendingUpdates":0,"expectedClients":2,"globalWeightCount":502,"lastAggregationAt":"..."}` |
 | **REST GET** | `/api/mqtt/latest` | Server → Dashboard | Latest MQTT message captured by `MqttMessageStore`. |
 | **REST POST** | `/api/mqtt/federated/training` | Dashboard → Server → MQTT | `{"useQuantization":true}` → publishes `{"command":"START_TRAINING","use_quantization":true}` to `federated/commands`. |
 | **REST POST** | `/api/mqtt/federated/model/toggle` | Dashboard → Server → MQTT | `{"activeModel":"GLOBAL"}` → publishes `{"command":"SET_MODEL","active_model":"GLOBAL"}` to `federated/commands`. |
 | **REST POST** | `/api/mqtt/federated/model/republish` | Dashboard → Server → MQTT | Republishes latest global weights to `federated/global/weights`. |
-| **REST POST** | `/api/mqtt/federated/model/republish-all` | Dashboard → Server → MQTT | Republishes global weights + per-client local weights (`federated/local/weights/{clientId}`). |
+| **REST POST** | `/api/mqtt/federated/status/reset` | Dashboard → Server | Clears pending client updates, received update counter, completed round counter, and last aggregation timestamp without deleting the persisted global model or resetting the phones. |
 | **REST POST** | `/api/mqtt/federated/command` | Dashboard → Server → MQTT | Publishes JSON commands (`RESET_GLOBAL`, `RESET_ALL`, `START_TRAINING`, `SET_MODEL`) to `federated/commands`. |
 
 ---
@@ -137,12 +137,12 @@ Every code file in `PROJECT_DASHBOARD` includes a top-of-file `FILE README` head
 - [`eslint.config.js`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/eslint.config.js): Flat ESLint config for TypeScript and React Hooks.
 - [`src/main.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/main.tsx): React DOM entry point mounting `<App />`.
 - [`src/index.css`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/index.css): Global stylesheet loading `@import "tailwindcss";`.
-- [`src/types/federated.ts`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/types/federated.ts): Shared TypeScript interfaces, pose definitions, and MLP/quantization constants (`246` weights, `984 B` vs `250 B`).
+- [`src/types/federated.ts`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/types/federated.ts): Shared TypeScript interfaces, pose definitions, and MLP/quantization constants (`502` weights, `2,008 B` vs `506 B`).
 - [`src/data/evaluationData.ts`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/data/evaluationData.ts): Confusion matrix metric engine (Overall Accuracy, Per-Class Precision/Recall/F1, Macro-F1), reference non-IID matrices, and symmetric 8-bit quantization simulator.
 - [`src/App.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/App.tsx): Root application state manager handling WebSocket telemetry, REST status polling, MQTT command dispatch, and section navigation.
-- [`src/components/PhonePoseVisualizer.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/PhonePoseVisualizer.tsx): Live Client A & Client B 3D spatial pose cards, non-IID in-distribution vs. out-of-distribution badges, device ID binding, and demo telemetry simulator.
-- [`src/components/OrchestrationControlPanel.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/OrchestrationControlPanel.tsx): Remote experiment controls (`START_TRAINING` 32-bit vs. 8-bit, `SET_MODEL` `LOCAL` vs. `GLOBAL`, snapshot sync, edge resets) and live FedAvg round status monitor.
-- [`src/components/ModelComparisonSection.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/ModelComparisonSection.tsx): Side-by-side 3-model comparison table, per-pose accuracy bars, $6 \times 6$ confusion matrices, live telemetry evaluation capture tool, and Android on-device benchmark logger.
+- [`src/components/PhonePoseVisualizer.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/PhonePoseVisualizer.tsx): Live Client A & Client B 3D spatial pose cards, non-IID in-distribution vs. out-of-distribution badges, live per-pose training/calibration status, device ID binding, and demo telemetry simulator.
+- [`src/components/OrchestrationControlPanel.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/OrchestrationControlPanel.tsx): Remote experiment controls (`START_TRAINING` 32-bit vs. 8-bit, `SET_MODEL` `LOCAL` vs. `GLOBAL`, global model broadcast, edge resets) and live FedAvg round status monitor.
+- [`src/components/ModelComparisonSection.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/ModelComparisonSection.tsx): Side-by-side 3-model comparison table, per-pose accuracy bars, $6 \times 6$ confusion matrices, live telemetry evaluation capture tool, and live Android on-device calibration benchmark status.
 - [`src/components/QuantizationContributionSection.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/QuantizationContributionSection.tsx): 8-bit symmetric min-max quantization wire layout visualization, cumulative MQTT bandwidth calculator, and interactive weight codec inspector.
 - [`src/components/SystemArchitecturePipeline.tsx`](file:///c:/Users/samue/source/repos/CSC8223_IoT/PROJECT_DASHBOARD/src/components/SystemArchitecturePipeline.tsx): 5-step FL workflow diagram, non-IID dataset specification table, on-device MLP engineering summary, and Privacy Rule compliance banner.
 
@@ -177,22 +177,6 @@ npm run build
 # 5. Run ESLint verification
 npm run lint
 ```
-
----
-
-## 9. In-Class Demonstration Walkthrough
-
-1. **Connect Edge Devices**: Launch the Android app on Phone A and Phone B, enter the broker IP, and tap **Connect**. Both devices appear in **Live Edge Device Spatial Pose Telemetry** and can be bound to **Client A** and **Client B**.
-2. **Demonstrate Isolated Local Model Blindness (Non-IID)**:
-   - Click **Switch to Local Model** (`{"command":"SET_MODEL","active_model":"LOCAL"}`).
-   - Place Phone A in `Screen Up`, `Screen Down`, and `Portrait Up` (in-distribution → accurate predictions), then rotate Phone A to `Portrait Down` or `Landscape Left` (out-of-distribution → badge warns `0 samples on Client A` and isolated local model misclassifies).
-3. **Demonstrate Collaborative Federated Global Model**:
-   - Click **Start Training (8-bit Quantized)** or **Republish Global** and watch **FedAvg Aggregation Status** increment `Completed FedAvg Rounds`.
-   - Click **Switch to Global Model** (`{"command":"SET_MODEL","active_model":"GLOBAL"}`).
-   - Test both phones across all 6 poses (`Screen Up`, `Screen Down`, `Portrait Up`, `Portrait Down`, `Landscape Left`, `Landscape Right`) to show accurate recognition across the entire domain.
-4. **Present Quantitative Evaluation & Technical Contribution**:
-   - Open **2. Three-Model Comparison (6×6 Matrices)** to show the confusion matrices, Macro-F1 scores, and live prediction capture.
-   - Open **3. 8-Bit Quantization Contribution** to show the `984 B` $\rightarrow$ `250 B` (**74.59%**) MQTT payload reduction and inspect individual quantized weights.
 
 ---
 

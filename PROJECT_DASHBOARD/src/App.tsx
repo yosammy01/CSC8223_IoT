@@ -16,10 +16,12 @@
  *      and dispatches MQTT control commands (`START_TRAINING` with 32-bit or
  *      8-bit quantization, `SET_MODEL` for `LOCAL` vs `GLOBAL`, model snapshot
  *      republishing, and `RESET_GLOBAL` / `RESET_ALL`).
- *   3. State Coordination Across Dashboard Views:
- *      Coordinates state across `<PhonePoseVisualizer />`,
- *      `<OrchestrationControlPanel />`, `<ModelComparisonSection />`,
- *      `<QuantizationContributionSection />`, and `<SystemArchitecturePipeline />`.
+ *   3. Reset & Domain Coverage Synchronization:
+ *      Tracks `localModelsTrained`, `globalModelTrained`, and `lastResetMode`
+ *      so that clicking `Reset Global` or `Reset All Edge` immediately resets
+ *      the 6-pose domain coverage and aggregation counters on the dashboard,
+ *      and automatically restores them when new training updates or model
+ *      republishes occur.
  * ============================================================================
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -43,6 +45,7 @@ import {
   REFERENCE_GLOBAL_8BIT_MATRIX,
   cloneConfusionMatrix,
   computeModelEvaluation,
+  createEmptyConfusionMatrix,
 } from './data/evaluationData';
 import PhonePoseVisualizer from './components/PhonePoseVisualizer';
 import OrchestrationControlPanel from './components/OrchestrationControlPanel';
@@ -88,23 +91,97 @@ export default function App() {
   const [lastActionFeedback, setLastActionFeedback] = useState<string | null>(null);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
 
+  // 6-Pose Domain Coverage & Model Reset state (live from phone telemetry)
+  const [localModelsTrained, setLocalModelsTrained] = useState<boolean>(true);
+  const [globalModelTrained, setGlobalModelTrained] = useState<boolean>(true);
+  const [lastResetMode, setLastResetMode] = useState<
+    'NONE' | 'RESET_GLOBAL' | 'RESET_ALL'
+  >('NONE');
+
+  // Baseline offset so Reset Global / Reset All Edge immediately zeroes displayed session counters
+  const rawServerStatusRef = useRef<FederatedStatus>({
+    receivedUpdates: 0,
+    completedRounds: 0,
+    pendingUpdates: 0,
+    expectedClients: 2,
+    globalWeightCount: MLP_TOTAL_WEIGHTS,
+    lastAggregationAt: null,
+  });
+  const resetBaselineRef = useRef<{
+    receivedUpdates: number;
+    completedRounds: number;
+    resetTimestampMs: number;
+  }>({
+    receivedUpdates: 0,
+    completedRounds: 0,
+    resetTimestampMs: 0,
+  });
+
   // Demo Pose Simulator state
   const [simulationEnabled, setSimulationEnabled] = useState(false);
 
-  // Evaluation Matrices state (Reference vs Live Interactive)
+  // Evaluation Matrices state (defaults to LIVE with all 0s until recorded; persisted in localStorage)
   const [evaluationMode, setEvaluationMode] = useState<'REFERENCE' | 'LIVE'>(
-    'REFERENCE'
+    'LIVE'
   );
+  const loadStoredMatrix = (key: string): ConfusionMatrix6x6 => {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length === 6) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return createEmptyConfusionMatrix();
+  };
+
   const [liveClientAMatrix, setLiveClientAMatrix] = useState<ConfusionMatrix6x6>(() =>
-    cloneConfusionMatrix(REFERENCE_CLIENT_A_MATRIX)
+    loadStoredMatrix('csc8223_eval_client_a')
   );
   const [liveClientBMatrix, setLiveClientBMatrix] = useState<ConfusionMatrix6x6>(() =>
-    cloneConfusionMatrix(REFERENCE_CLIENT_B_MATRIX)
+    loadStoredMatrix('csc8223_eval_client_b')
   );
   const [liveGlobal8BitMatrix, setLiveGlobal8BitMatrix] =
     useState<ConfusionMatrix6x6>(() =>
-      cloneConfusionMatrix(REFERENCE_GLOBAL_8BIT_MATRIX)
+      loadStoredMatrix('csc8223_eval_global_8bit')
     );
+  const [liveGlobal32BitMatrix, setLiveGlobal32BitMatrix] =
+    useState<ConfusionMatrix6x6>(() =>
+      loadStoredMatrix('csc8223_eval_global_32bit')
+    );
+
+  // Persist recorded evaluation matrices in browser localStorage
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        'csc8223_eval_client_a',
+        JSON.stringify(liveClientAMatrix)
+      );
+      window.localStorage.setItem(
+        'csc8223_eval_client_b',
+        JSON.stringify(liveClientBMatrix)
+      );
+      window.localStorage.setItem(
+        'csc8223_eval_global_8bit',
+        JSON.stringify(liveGlobal8BitMatrix)
+      );
+      window.localStorage.setItem(
+        'csc8223_eval_global_32bit',
+        JSON.stringify(liveGlobal32BitMatrix)
+      );
+    } catch {
+      // Ignore storage errors
+    }
+  }, [
+    liveClientAMatrix,
+    liveClientBMatrix,
+    liveGlobal8BitMatrix,
+    liveGlobal32BitMatrix,
+  ]);
 
   // Active dashboard view filter
   const [activeTab, setActiveTab] = useState<DashboardTab>('ALL');
@@ -126,50 +203,91 @@ export default function App() {
   );
 
   // Handle incoming telemetry payload (from WebSocket or Demo Simulator)
-  const ingestTelemetry = useCallback((data: TelemetryMessage) => {
-    if (!data.clientId) return;
+  const ingestTelemetry = useCallback(
+    (data: TelemetryMessage) => {
+      if (!data.clientId) return;
 
-    setTelemetry((prev) => ({
-      ...prev,
-      [data.clientId]: data,
-    }));
-
-    setPacketCounts((prev) => ({
-      ...prev,
-      [data.clientId]: (prev[data.clientId] || 0) + 1,
-    }));
-
-    setTelemetryHistory((prev) => {
-      const existing = prev[data.clientId] || [];
-      if (existing[0]?.pose === data.pose) {
-        return prev;
+      const normalizedPose = (data.pose || '').trim().toUpperCase();
+      if (normalizedPose === 'RESET' || normalizedPose === 'RESET_ALL') {
+        const currentRaw = rawServerStatusRef.current;
+        resetBaselineRef.current = {
+          receivedUpdates: currentRaw.receivedUpdates,
+          completedRounds: currentRaw.completedRounds,
+          resetTimestampMs: Date.now(),
+        };
+        setFederatedStatus((prev) => ({
+          ...prev,
+          receivedUpdates: 0,
+          completedRounds: 0,
+          pendingUpdates: 0,
+          lastAggregationAt: null,
+        }));
+        setLocalModelsTrained(false);
+        setGlobalModelTrained(false);
+        setLastResetMode('RESET_ALL');
+        setEvaluationMode('LIVE');
+        setLiveClientAMatrix(createEmptyConfusionMatrix());
+        setLiveClientBMatrix(createEmptyConfusionMatrix());
+        setLiveGlobal8BitMatrix(createEmptyConfusionMatrix());
+        setLiveGlobal32BitMatrix(createEmptyConfusionMatrix());
+        appendLog(
+          'COMMAND',
+          `Edge reset detected from ${data.clientId} (${data.pose}) — reset 6-pose domain coverage (Train 0/50)`
+        );
       }
-      return {
+
+      // Only update active pose display if a pose string was included
+      if (data.pose) {
+        setTelemetry((prev) => ({
+          ...prev,
+          [data.clientId]: data,
+        }));
+
+        setTelemetryHistory((prev) => {
+          const existing = prev[data.clientId] || [];
+          if (existing[0]?.pose === data.pose) {
+            return prev;
+          }
+          return {
+            ...prev,
+            [data.clientId]: [
+              { pose: data.pose, timestamp: data.timestamp },
+              ...existing.slice(0, 7),
+            ],
+          };
+        });
+      }
+
+      setPacketCounts((prev) => ({
         ...prev,
-        [data.clientId]: [
-          { pose: data.pose, timestamp: data.timestamp },
-          ...existing.slice(0, 7),
-        ],
-      };
-    });
+        [data.clientId]: (prev[data.clientId] || 0) + 1,
+      }));
 
-    // Auto-map first two distinct EdgeClient_* IDs to CLIENT_A and CLIENT_B if defaults have no data
-    setClientRoleMapping((prev) => {
-      if (
-        prev.CLIENT_A === data.clientId ||
-        prev.CLIENT_B === data.clientId
-      ) {
+      // Auto-map first two distinct EdgeClient_* IDs to CLIENT_A and CLIENT_B if defaults have no data
+      setClientRoleMapping((prev) => {
+        if (
+          prev.CLIENT_A === data.clientId ||
+          prev.CLIENT_B === data.clientId
+        ) {
+          return prev;
+        }
+        if (
+          prev.CLIENT_A === 'EdgeClient_A' &&
+          data.clientId !== 'EdgeClient_B'
+        ) {
+          return { ...prev, CLIENT_A: data.clientId };
+        }
+        if (
+          prev.CLIENT_B === 'EdgeClient_B' &&
+          data.clientId !== prev.CLIENT_A
+        ) {
+          return { ...prev, CLIENT_B: data.clientId };
+        }
         return prev;
-      }
-      if (prev.CLIENT_A === 'EdgeClient_A' && data.clientId !== 'EdgeClient_B') {
-        return { ...prev, CLIENT_A: data.clientId };
-      }
-      if (prev.CLIENT_B === 'EdgeClient_B' && data.clientId !== prev.CLIENT_A) {
-        return { ...prev, CLIENT_B: data.clientId };
-      }
-      return prev;
-    });
-  }, []);
+      });
+    },
+    [appendLog]
+  );
 
   // Connect to Spring Boot WebSocket /ws/telemetry
   useEffect(() => {
@@ -211,10 +329,15 @@ export default function App() {
             if (data && data.clientId) {
               ingestTelemetry({
                 clientId: data.clientId,
-                pose: data.pose || 'Unknown',
+                pose: data.pose || '',
                 timestamp: data.timestamp || Date.now(),
                 activeModel: data.activeModel,
                 confidence: data.confidence,
+                trainCounts: data.trainCounts,
+                calibCounts: data.calibCounts,
+                evalCounts: data.evalCounts,
+                localAccuracy: data.localAccuracy,
+                globalAccuracy: data.globalAccuracy,
               });
             }
           } catch (e) {
@@ -239,29 +362,101 @@ export default function App() {
   }, [ingestTelemetry]);
 
   // Poll Spring Boot /api/mqtt/federated/status and /api/mqtt/latest
-  const prevCompletedRoundsRef = useRef<number>(0);
+  const prevCompletedRoundsRef = useRef<number>(-1);
+  const prevReceivedUpdatesRef = useRef<number>(-1);
 
   const fetchBackendStatus = useCallback(async () => {
     try {
-      const [statusRes, latestRes] = await Promise.all([
-        fetch('/api/mqtt/federated/status'),
-        fetch('/api/mqtt/latest'),
-      ]);
+      const statusRes = await fetch('/api/mqtt/federated/status', {
+        cache: 'no-store',
+      });
 
       if (statusRes.ok) {
         setBackendReachable(true);
         const statusData: FederatedStatus = await statusRes.json();
-        setFederatedStatus(statusData);
+        rawServerStatusRef.current = statusData;
 
-        if (statusData.completedRounds > prevCompletedRoundsRef.current) {
+        // First poll initialization
+        if (prevCompletedRoundsRef.current === -1) {
           prevCompletedRoundsRef.current = statusData.completedRounds;
-          appendLog(
-            'AGGREGATION',
-            `FedAvg Round #${statusData.completedRounds} aggregated & broadcast to federated/global/weights`
-          );
-        }
-      }
+          prevReceivedUpdatesRef.current = statusData.receivedUpdates;
+          if (statusData.completedRounds > 0 || statusData.receivedUpdates > 0) {
+            appendLog(
+              'AGGREGATION',
+              `Synced backend status: ${statusData.completedRounds} completed FedAvg round(s), ${statusData.receivedUpdates} client weight update(s)`
+            );
+          }
+        } else {
+          // Handle server-side counter reset (/api/mqtt/federated/status/reset)
+          if (statusData.receivedUpdates < prevReceivedUpdatesRef.current) {
+            prevReceivedUpdatesRef.current = statusData.receivedUpdates;
+          }
+          if (statusData.completedRounds < prevCompletedRoundsRef.current) {
+            prevCompletedRoundsRef.current = statusData.completedRounds;
+          }
 
+          // Detect newly received local weight updates from phones
+          if (statusData.receivedUpdates > prevReceivedUpdatesRef.current) {
+            const delta =
+              statusData.receivedUpdates - prevReceivedUpdatesRef.current;
+            prevReceivedUpdatesRef.current = statusData.receivedUpdates;
+            setLocalModelsTrained(true);
+            setLastResetMode((prev) => (prev === 'RESET_ALL' ? 'NONE' : prev));
+            appendLog(
+              'TELEMETRY',
+              `Received +${delta} quantized client weight update(s) (total: ${statusData.receivedUpdates})`
+            );
+          }
+
+          // Detect newly completed FedAvg aggregation rounds
+          if (statusData.completedRounds > prevCompletedRoundsRef.current) {
+            prevCompletedRoundsRef.current = statusData.completedRounds;
+            setLocalModelsTrained(true);
+            setGlobalModelTrained(true);
+            setLastResetMode('NONE');
+            appendLog(
+              'AGGREGATION',
+              `FedAvg Round #${statusData.completedRounds} aggregated & broadcast to federated/global/weights`
+            );
+          }
+        }
+
+        const baseline = resetBaselineRef.current;
+        const effectiveReceived = Math.max(
+          0,
+          statusData.receivedUpdates - baseline.receivedUpdates
+        );
+        const effectiveRounds = Math.max(
+          0,
+          statusData.completedRounds - baseline.completedRounds
+        );
+        const lastAggTimeMs = statusData.lastAggregationAt
+          ? new Date(statusData.lastAggregationAt).getTime()
+          : 0;
+        const effectiveLastAgg =
+          baseline.resetTimestampMs > 0 &&
+          lastAggTimeMs <= baseline.resetTimestampMs
+            ? null
+            : statusData.lastAggregationAt;
+
+        setFederatedStatus({
+          ...statusData,
+          receivedUpdates: effectiveReceived,
+          completedRounds: effectiveRounds,
+          pendingUpdates:
+            (baseline.resetTimestampMs > 0 && effectiveReceived === 0) ||
+            effectiveRounds >= 1
+              ? 0
+              : statusData.pendingUpdates,
+          lastAggregationAt: effectiveLastAgg,
+        });
+      }
+    } catch {
+      // Status endpoint unreachable
+    }
+
+    try {
+      const latestRes = await fetch('/api/mqtt/latest', { cache: 'no-store' });
       if (latestRes.ok) {
         const latestData: LatestMessageResponse = await latestRes.json();
         if (latestData.message) {
@@ -269,7 +464,7 @@ export default function App() {
         }
       }
     } catch {
-      // Backend offline or unreachable
+      // Latest endpoint unreachable
     }
   }, [appendLog]);
 
@@ -319,9 +514,17 @@ export default function App() {
   const handleStartTraining = async (useQuantization: boolean) => {
     setIsDispatching(true);
     const pipelineLabel = useQuantization
-      ? '8-bit Quantized (250B)'
-      : '32-bit Baseline (984B)';
+      ? '8-bit Quantized (506B)'
+      : '32-bit Baseline (2,008B)';
     setSelectedPipeline(useQuantization ? '8BIT' : '32BIT');
+    setLocalModelsTrained(true);
+    setGlobalModelTrained(true);
+    setLastResetMode('NONE');
+    resetBaselineRef.current = {
+      receivedUpdates: 0,
+      completedRounds: 0,
+      resetTimestampMs: 0,
+    };
 
     try {
       const res = await fetch('/api/mqtt/federated/training', {
@@ -396,9 +599,17 @@ export default function App() {
 
   const handleRepublishGlobal = async () => {
     setIsDispatching(true);
+    setGlobalModelTrained(true);
+    setLastResetMode((prev) => (prev === 'RESET_GLOBAL' ? 'NONE' : prev));
+    resetBaselineRef.current = {
+      receivedUpdates: 0,
+      completedRounds: 0,
+      resetTimestampMs: 0,
+    };
+
     try {
       await fetch('/api/mqtt/federated/model/republish', { method: 'POST' });
-      setLastActionFeedback('Republished global weights to broker');
+      setLastActionFeedback('Republished global weights to broker (6/6 poses restored)');
       appendLog(
         'AGGREGATION',
         'Republished persisted global weights to federated/global/weights'
@@ -412,19 +623,42 @@ export default function App() {
     }
   };
 
-  const handleRepublishAll = async () => {
+  const handleResetFederatedStatus = async () => {
     setIsDispatching(true);
+    resetBaselineRef.current = {
+      receivedUpdates: 0,
+      completedRounds: 0,
+      resetTimestampMs: 0,
+    };
+    prevReceivedUpdatesRef.current = 0;
+    prevCompletedRoundsRef.current = 0;
+
+    setFederatedStatus((prev) => ({
+      ...prev,
+      receivedUpdates: 0,
+      completedRounds: 0,
+      pendingUpdates: 0,
+      lastAggregationAt: null,
+    }));
+
     try {
-      await fetch('/api/mqtt/federated/model/republish-all', { method: 'POST' });
-      setLastActionFeedback('Synchronized global + per-client local models');
+      await fetch('/api/mqtt/federated/status/reset', { method: 'POST' });
+      setLastActionFeedback(
+        'Reset FedAvg aggregation status (global model preserved)'
+      );
       appendLog(
         'AGGREGATION',
-        'Republished global & per-client local weights from snapshot store'
+        'Reset FedAvg aggregation status (pending updates, counters & timestamp cleared; global model preserved)'
       );
       await fetchBackendStatus();
     } catch {
-      setLastActionFeedback('Sync all models requested');
-      appendLog('AGGREGATION', 'Requested global + local model sync');
+      setLastActionFeedback(
+        'Reset FedAvg aggregation status (global model preserved) [Offline Demo Mode]'
+      );
+      appendLog(
+        'AGGREGATION',
+        'Reset FedAvg aggregation status (global model preserved)'
+      );
     } finally {
       setIsDispatching(false);
     }
@@ -432,18 +666,72 @@ export default function App() {
 
   const handleSendResetCommand = async (resetType: 'RESET_GLOBAL' | 'RESET_ALL') => {
     setIsDispatching(true);
+
+    // Immediately update 6-Pose Domain Coverage & session counters on dashboard
+    const raw = rawServerStatusRef.current;
+    if (resetType === 'RESET_ALL') {
+      setLocalModelsTrained(false);
+      setGlobalModelTrained(false);
+      setLastResetMode('RESET_ALL');
+      resetBaselineRef.current = {
+        receivedUpdates: raw.receivedUpdates,
+        completedRounds: raw.completedRounds,
+        resetTimestampMs: Date.now(),
+      };
+      setFederatedStatus((prev) => ({
+        ...prev,
+        receivedUpdates: 0,
+        completedRounds: 0,
+        pendingUpdates: 0,
+        lastAggregationAt: null,
+      }));
+      // Reset displayed device pose to Unknown to mirror phone reset
+      setTelemetry((prev) => {
+        const next: Record<string, TelemetryMessage> = {};
+        for (const [k, v] of Object.entries(prev)) {
+          next[k] = { ...v, pose: 'Reset (Untrained)', timestamp: Date.now() };
+        }
+        return next;
+      });
+    } else {
+      // RESET_GLOBAL
+      setGlobalModelTrained(false);
+      setLastResetMode('RESET_GLOBAL');
+      resetBaselineRef.current = {
+        ...resetBaselineRef.current,
+        completedRounds: raw.completedRounds,
+        resetTimestampMs: Date.now(),
+      };
+      setFederatedStatus((prev) => ({
+        ...prev,
+        completedRounds: 0,
+        lastAggregationAt: null,
+      }));
+    }
+
     try {
       await fetch('/api/mqtt/federated/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: resetType }),
       });
-      setLastActionFeedback(`Dispatched ${resetType} to edge clients`);
-      appendLog('COMMAND', `Dispatched ${resetType} to federated/commands`);
-      await fetchBackendStatus();
+      setLastActionFeedback(
+        resetType === 'RESET_ALL'
+          ? 'Reset All Edge Models & 6-Pose Domain Coverages (0/50 trained)'
+          : 'Reset Global Model & Global 6-Pose Domain Coverage (0/6 global)'
+      );
+      appendLog(
+        'COMMAND',
+        `Dispatched ${resetType} to federated/commands — 6-pose domain coverage reset`
+      );
     } catch {
-      setLastActionFeedback(`Dispatched ${resetType} [Offline Demo Mode]`);
-      appendLog('COMMAND', `Dispatched ${resetType} (Local UI State)`);
+      setLastActionFeedback(
+        `Dispatched ${resetType} — 6-pose domain coverage reset [Offline Demo Mode]`
+      );
+      appendLog(
+        'COMMAND',
+        `Dispatched ${resetType} (6-pose domain coverage reset)`
+      );
     } finally {
       setIsDispatching(false);
     }
@@ -451,6 +739,7 @@ export default function App() {
 
   // Simulate a FedAvg client weight update / aggregation round step
   const handleSimulateRoundStep = () => {
+    setLocalModelsTrained(true);
     setFederatedStatus((prev) => {
       const nextReceived = prev.receivedUpdates + 1;
       const nextPending = prev.pendingUpdates + 1;
@@ -460,11 +749,14 @@ export default function App() {
         : prev.completedRounds;
 
       if (completedRoundNow) {
+        setGlobalModelTrained(true);
+        setLastResetMode('NONE');
         appendLog(
           'AGGREGATION',
-          `FedAvg Round #${nextCompleted} completed (${prev.expectedClients}/${prev.expectedClients} clients aggregated, 250B broadcast)`
+          `FedAvg Round #${nextCompleted} completed (${prev.expectedClients}/${prev.expectedClients} clients aggregated, 506B broadcast)`
         );
       } else {
+        setLastResetMode((m) => (m === 'RESET_ALL' ? 'NONE' : m));
         appendLog(
           'TELEMETRY',
           `Received quantized local weight update (${nextPending}/${prev.expectedClients} pending in round)`
@@ -494,70 +786,108 @@ export default function App() {
   };
 
   const handleAssignClientRole = (role: ClientRole, clientId: string) => {
-    setClientRoleMapping((prev) => ({
-      ...prev,
-      [role]: clientId,
-    }));
+    setClientRoleMapping((prev) => {
+      const otherRole: ClientRole = role === 'CLIENT_A' ? 'CLIENT_B' : 'CLIENT_A';
+      if (prev[otherRole] === clientId) {
+        return {
+          ...prev,
+          [role]: clientId,
+          [otherRole]: prev[role],
+        };
+      }
+      return {
+        ...prev,
+        [role]: clientId,
+      };
+    });
   };
 
-  // Compute the 3-Model Evaluation Summaries
+  // Compute the 3-Model Evaluation Summaries (reflecting 0/50 when reset)
   const clientALocalEval = useMemo(() => {
     const matrix =
-      evaluationMode === 'REFERENCE'
+      lastResetMode === 'RESET_ALL'
+        ? createEmptyConfusionMatrix()
+        : evaluationMode === 'REFERENCE'
         ? REFERENCE_CLIENT_A_MATRIX
         : liveClientAMatrix;
     return computeModelEvaluation(
       'CLIENT_A_LOCAL',
       'Client A Local Model (Isolated)',
       'Trained only on Client A local data',
-      'Screen Up, Screen Down, Portrait Up (50/pose)',
+      lastResetMode === 'RESET_ALL'
+        ? 'Reset: 0/50 trained'
+        : 'Screen Up, Screen Down, Portrait Up (50/pose)',
       matrix
     );
-  }, [evaluationMode, liveClientAMatrix]);
+  }, [evaluationMode, liveClientAMatrix, lastResetMode]);
 
   const clientBLocalEval = useMemo(() => {
     const matrix =
-      evaluationMode === 'REFERENCE'
+      lastResetMode === 'RESET_ALL'
+        ? createEmptyConfusionMatrix()
+        : evaluationMode === 'REFERENCE'
         ? REFERENCE_CLIENT_B_MATRIX
         : liveClientBMatrix;
     return computeModelEvaluation(
       'CLIENT_B_LOCAL',
       'Client B Local Model (Isolated)',
       'Trained only on Client B local data',
-      'Portrait Down, Landscape Left, Landscape Right (50/pose)',
+      lastResetMode === 'RESET_ALL'
+        ? 'Reset: 0/50 trained'
+        : 'Portrait Down, Landscape Left, Landscape Right (50/pose)',
       matrix
     );
-  }, [evaluationMode, liveClientBMatrix]);
+  }, [evaluationMode, liveClientBMatrix, lastResetMode]);
 
   const global8BitEval = useMemo(() => {
     const matrix =
-      evaluationMode === 'REFERENCE'
+      lastResetMode === 'RESET_ALL' || lastResetMode === 'RESET_GLOBAL'
+        ? createEmptyConfusionMatrix()
+        : evaluationMode === 'REFERENCE'
         ? REFERENCE_GLOBAL_8BIT_MATRIX
         : liveGlobal8BitMatrix;
     return computeModelEvaluation(
       'FEDERATED_GLOBAL_8BIT',
       'Federated Global Model (8-Bit Quantized FedAvg)',
       'Collaboratively trained across Client A + Client B',
-      'All 6 Poses via Symmetric 8-Bit FedAvg (250B/update)',
+      lastResetMode === 'RESET_ALL' || lastResetMode === 'RESET_GLOBAL'
+        ? 'Reset: 0/6 global poses'
+        : 'All 6 Poses via Symmetric 8-Bit FedAvg (506B/update)',
       matrix
     );
-  }, [evaluationMode, liveGlobal8BitMatrix]);
+  }, [evaluationMode, liveGlobal8BitMatrix, lastResetMode]);
 
   const global32BitEval = useMemo(() => {
+    const matrix =
+      lastResetMode === 'RESET_ALL' || lastResetMode === 'RESET_GLOBAL'
+        ? createEmptyConfusionMatrix()
+        : evaluationMode === 'REFERENCE'
+        ? REFERENCE_GLOBAL_32BIT_MATRIX
+        : liveGlobal32BitMatrix;
     return computeModelEvaluation(
       'FEDERATED_GLOBAL_32BIT',
       'Federated Global Model (32-Bit Float Baseline)',
       'Uncompressed FedAvg baseline',
-      'All 6 Poses via 32-Bit Float FedAvg (984B/update)',
-      REFERENCE_GLOBAL_32BIT_MATRIX
+      lastResetMode === 'RESET_ALL' || lastResetMode === 'RESET_GLOBAL'
+        ? 'Reset: 0/6 global poses'
+        : 'All 6 Poses via 32-Bit Float FedAvg (2,008B/update)',
+      matrix
     );
-  }, []);
+  }, [evaluationMode, liveGlobal32BitMatrix, lastResetMode]);
 
   const handleRecordEvaluationSample = (
-    targetModel: 'CLIENT_A_LOCAL' | 'CLIENT_B_LOCAL' | 'FEDERATED_GLOBAL_8BIT',
+    targetModel:
+      | 'CLIENT_A_LOCAL'
+      | 'CLIENT_B_LOCAL'
+      | 'FEDERATED_GLOBAL_8BIT'
+      | 'FEDERATED_GLOBAL_32BIT',
     truePoseIndex: number,
     predictedPoseIndex: number
   ) => {
+    setLastResetMode('NONE');
+    setLocalModelsTrained(true);
+    setGlobalModelTrained(true);
+
     const updater = (prev: ConfusionMatrix6x6) => {
       const next = cloneConfusionMatrix(prev);
       next[truePoseIndex][predictedPoseIndex] =
@@ -567,6 +897,8 @@ export default function App() {
 
     if (targetModel === 'CLIENT_A_LOCAL') setLiveClientAMatrix(updater);
     else if (targetModel === 'CLIENT_B_LOCAL') setLiveClientBMatrix(updater);
+    else if (targetModel === 'FEDERATED_GLOBAL_32BIT')
+      setLiveGlobal32BitMatrix(updater);
     else setLiveGlobal8BitMatrix(updater);
 
     appendLog(
@@ -576,10 +908,11 @@ export default function App() {
   };
 
   const handleResetLiveEvaluation = () => {
-    setLiveClientAMatrix(cloneConfusionMatrix(REFERENCE_CLIENT_A_MATRIX));
-    setLiveClientBMatrix(cloneConfusionMatrix(REFERENCE_CLIENT_B_MATRIX));
-    setLiveGlobal8BitMatrix(cloneConfusionMatrix(REFERENCE_GLOBAL_8BIT_MATRIX));
-    appendLog('SYSTEM', 'Reset live evaluation matrices to reference baseline');
+    setLiveClientAMatrix(createEmptyConfusionMatrix());
+    setLiveClientBMatrix(createEmptyConfusionMatrix());
+    setLiveGlobal8BitMatrix(createEmptyConfusionMatrix());
+    setLiveGlobal32BitMatrix(createEmptyConfusionMatrix());
+    appendLog('SYSTEM', 'Cleared live evaluation matrices to 0');
   };
 
   return (
@@ -707,6 +1040,9 @@ export default function App() {
               clientRoleMapping={clientRoleMapping}
               onAssignClientRole={handleAssignClientRole}
               activeModel={activeModel}
+              localModelsTrained={localModelsTrained}
+              globalModelTrained={globalModelTrained}
+              lastResetMode={lastResetMode}
               simulationEnabled={simulationEnabled}
               onToggleSimulation={() => setSimulationEnabled((v) => !v)}
               onSimulatePose={handleSimulatePose}
@@ -723,7 +1059,7 @@ export default function App() {
               onStartTraining={handleStartTraining}
               onToggleModel={handleToggleModel}
               onRepublishGlobal={handleRepublishGlobal}
-              onRepublishAll={handleRepublishAll}
+              onResetFederatedStatus={handleResetFederatedStatus}
               onSendResetCommand={handleSendResetCommand}
               onRefreshStatus={fetchBackendStatus}
               onSimulateRoundStep={handleSimulateRoundStep}
@@ -757,7 +1093,10 @@ export default function App() {
         )}
 
         {(activeTab === 'ALL' || activeTab === 'ARCHITECTURE') && (
-          <SystemArchitecturePipeline />
+          <SystemArchitecturePipeline
+            localModelsTrained={localModelsTrained}
+            lastResetMode={lastResetMode}
+          />
         )}
       </main>
     </div>

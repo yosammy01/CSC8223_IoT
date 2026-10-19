@@ -10,10 +10,10 @@
  *   enforcement.
  *
  * Alignment with PROJECT_ANDROID & PROJECT_BACKEND:
- *   - Documents the 100ms sliding window gravity feature extractor
- *     (`FeatureExtractor.kt`: 8 features normalized by 9.8 m/s^2).
- *   - Documents the 8 -> 16 -> 6 Kotlin MLP (`MultiLayerPerceptron.kt`:
- *     Sigmoid hidden, Softmax output, learning rate 0.1, 246 parameters).
+ *   - Documents the 100ms sliding window multi-sensor feature extractor
+ *     (`FeatureExtractor.kt`: 24 normalized features across Gravity, Accel & Gyro).
+ *   - Documents the 24 -> 16 -> 6 Kotlin MLP (`MultiLayerPerceptron.kt`:
+ *     Sigmoid hidden, Softmax output, learning rate 0.1, 502 parameters).
  *   - Documents the Non-IID training distribution (50 samples/pose on 3 poses
  *     per client) and universal calibration dataset (10 samples/pose across all
  *     6 poses per phone).
@@ -28,25 +28,35 @@ import {
   POSE_DEFINITIONS,
 } from '../types/federated';
 
-export default function SystemArchitecturePipeline() {
+interface SystemArchitecturePipelineProps {
+  localModelsTrained?: boolean;
+  lastResetMode?: 'NONE' | 'RESET_GLOBAL' | 'RESET_ALL';
+}
+
+export default function SystemArchitecturePipeline({
+  localModelsTrained = true,
+  lastResetMode = 'NONE',
+}: SystemArchitecturePipelineProps) {
+  const isResetAll = !localModelsTrained || lastResetMode === 'RESET_ALL';
+
   const workflowSteps = [
     {
       step: '1. Collect Data',
       tier: 'Edge Tier (Android)',
       detail:
-        'SensorService samples 3-axis Gravity/Accelerometer over a 100ms sliding window; raw sensor data stays strictly on-device.',
+        'SensorService samples 3-axis Gravity, Accelerometer & Gyroscope over a 100ms sliding window; raw sensor data stays strictly on-device.',
     },
     {
       step: '2. Train Locally',
       tier: 'Edge Tier (Kotlin MLP)',
       detail:
-        '8 normalized gravity features ([μx, μy, μz, σx, σy, σz, μ|g|, σ|g|] / 9.8) train an 8→16→6 MLP (η=0.1) on non-IID local poses.',
+        '24 normalized sensor features (8 Gravity + 8 Accel + 8 Gyro) train a 24→16→6 MLP (η=0.1, 502 weights) on non-IID local poses.',
     },
     {
       step: '3. Send Update',
       tier: 'MQTT Binary Publish',
       detail:
-        'Quantizer.kt symmetrically compresses 246 float32 weights (984B) into 250B (4B maxAbs + 246 int8) on federated/local/weights/{clientId}.',
+        'Quantizer.kt symmetrically compresses 502 float32 weights (2,008B) into 506B (4B maxAbs + 502 int8) on federated/local/weights/{clientId}.',
     },
     {
       step: '4. Aggregate (FedAvg)',
@@ -115,9 +125,6 @@ export default function SystemArchitecturePipeline() {
                 <th className="py-2.5 px-3 font-bold text-center">
                   Client B Train
                 </th>
-                <th className="py-2.5 px-3 font-bold text-center">
-                  Universal Eval
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -130,25 +137,30 @@ export default function SystemArchitecturePipeline() {
                     </td>
                     <td className="py-2 px-3 text-slate-600">{pose.definition}</td>
                     <td className="py-2 px-3 text-center font-mono">
-                      {isA ? (
+                      {isResetAll ? (
+                        <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">
+                          0/50 (reset)
+                        </span>
+                      ) : isA ? (
                         <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-bold">
-                          50 samples
+                          ✓ (50/50)
                         </span>
                       ) : (
-                        <span className="text-slate-400">0 (unseen)</span>
+                        <span className="text-slate-400">0/50 (unseen)</span>
                       )}
                     </td>
                     <td className="py-2 px-3 text-center font-mono">
-                      {!isA ? (
+                      {isResetAll ? (
+                        <span className="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold">
+                          0/50 (reset)
+                        </span>
+                      ) : !isA ? (
                         <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
-                          50 samples
+                          ✓ (50/50)
                         </span>
                       ) : (
-                        <span className="text-slate-400">0 (unseen)</span>
+                        <span className="text-slate-400">0/50 (unseen)</span>
                       )}
-                    </td>
-                    <td className="py-2 px-3 text-center font-mono font-semibold text-slate-700">
-                      10 / phone
                     </td>
                   </tr>
                 );
@@ -166,11 +178,11 @@ export default function SystemArchitecturePipeline() {
             <div className="space-y-1.5 text-xs font-mono">
               <div className="flex justify-between border-b border-slate-800 pb-1">
                 <span className="text-slate-400">Sliding Window:</span>
-                <span>100 ms (Gravity / Accel)</span>
+                <span>100 ms (Grav + Accel + Gyro)</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
                 <span className="text-slate-400">Feature Vector:</span>
-                <span>{MLP_INPUT_FEATURES} floats (norm ÷ 9.8)</span>
+                <span>{MLP_INPUT_FEATURES} floats (3 × 8 stats)</span>
               </div>
               <div className="flex justify-between border-b border-slate-800 pb-1">
                 <span className="text-slate-400">MLP Architecture:</span>

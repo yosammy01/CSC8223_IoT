@@ -11,10 +11,10 @@
  *      that tilt/rotate according to the live predicted pose (`Screen Up`,
  *      `Screen Down`, `Portrait Up`, `Portrait Down`, `Landscape Left`,
  *      `Landscape Right`) and display the dominant gravity axis hint.
- *   2. Displays whether the currently detected pose belongs to the device's
- *      primary local training distribution (50 samples — Seen Locally) or is
- *      out-of-distribution (0 samples — Unseen Locally, requiring the
- *      Federated Global Model).
+ *   2. Dynamically tracks and visualizes 6-Pose Domain Coverage for Client A
+ *      and Client B, resetting coverage badges to `0 train` when `Reset Global`
+ *      or `Reset All Edge` is triggered from the dashboard and restoring them
+ *      when training updates or model syncs occur.
  *   3. Supports dynamic device ID binding (`EdgeClient_<id>`) and an optional
  *      Demo Telemetry Simulator for testing pose transitions without hardware.
  * ============================================================================
@@ -36,6 +36,9 @@ interface PhonePoseVisualizerProps {
   clientRoleMapping: Record<ClientRole, string>;
   onAssignClientRole: (role: ClientRole, clientId: string) => void;
   activeModel: ActiveModelType;
+  localModelsTrained: boolean;
+  globalModelTrained: boolean;
+  lastResetMode: 'NONE' | 'RESET_GLOBAL' | 'RESET_ALL';
   simulationEnabled: boolean;
   onToggleSimulation: () => void;
   onSimulatePose: (clientId: string, pose: PoseName) => void;
@@ -117,7 +120,7 @@ function PhoneSpatialGraphic({ poseName }: { poseName: string }) {
           ) : poseDef ? (
             <>
               <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-200">
-                VERTICAL
+                {isLandscapeLeft || isLandscapeRight ? 'HORIZONTAL' : 'VERTICAL'}
               </span>
               <span className="text-[9px] opacity-80">{poseDef.shortName}</span>
             </>
@@ -140,6 +143,9 @@ export default function PhonePoseVisualizer({
   clientRoleMapping,
   onAssignClientRole,
   activeModel,
+  localModelsTrained,
+  globalModelTrained,
+  lastResetMode,
   simulationEnabled,
   onToggleSimulation,
   onSimulatePose,
@@ -178,11 +184,21 @@ export default function PhonePoseVisualizer({
       {/* Section Header + Simulation Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-slate-900 flex flex-wrap items-center gap-2">
             <span>Live Edge Device Spatial Pose Telemetry</span>
             <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200">
               Active Inference: {activeModel} MODEL
             </span>
+            {lastResetMode === 'RESET_ALL' && (
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300">
+                All Edge Models Reset (0/6 Poses Trained)
+              </span>
+            )}
+            {lastResetMode === 'RESET_GLOBAL' && (
+              <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
+                Global Model Reset (0/6 Global Poses)
+              </span>
+            )}
           </h2>
           <p className="text-sm text-slate-600">
             Real-time predictions streamed from Android edge clients via MQTT{' '}
@@ -196,19 +212,32 @@ export default function PhonePoseVisualizer({
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={onToggleSimulation}
-          className={`px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer self-start sm:self-auto ${
-            simulationEnabled
-              ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
-              : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-          }`}
-        >
-          {simulationEnabled
-            ? '● Demo Telemetry Simulator: ON'
-            : '○ Enable Demo Pose Simulator'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() =>
+              onAssignClientRole('CLIENT_A', clientRoleMapping.CLIENT_B)
+            }
+            className="px-3.5 py-2 rounded-lg text-xs font-semibold border bg-white text-slate-700 border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+            title="Swap which EdgeClient ID is assigned to Client A vs Client B"
+          >
+            ⇄ Swap Client A &amp; B IDs
+          </button>
+
+          <button
+            type="button"
+            onClick={onToggleSimulation}
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+              simulationEnabled
+                ? 'bg-amber-500 text-white border-amber-600 hover:bg-amber-600'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            {simulationEnabled
+              ? '● Demo Telemetry Simulator: ON'
+              : '○ Enable Demo Pose Simulator'}
+          </button>
+        </div>
       </div>
 
       {/* Two Primary Non-IID Client Cards */}
@@ -217,11 +246,16 @@ export default function PhonePoseVisualizer({
           const data = telemetry[card.assignedClientId];
           const currentPose = data?.pose || 'Waiting for telemetry...';
           const poseDef = getPoseDefinition(currentPose);
-          const isSeenLocally = poseDef
+          const isPrimaryPose = poseDef
             ? card.primaryPoses.includes(poseDef.name)
             : null;
           const history = telemetryHistory[card.assignedClientId] || [];
           const count = packetCounts[card.assignedClientId] || 0;
+
+          // Determine if this client's primary poses are currently trained
+          // If RESET_ALL was triggered (not localModelsTrained) or if RESET_GLOBAL was triggered while viewing GLOBAL model, reflect reset
+          const showResetAll = !localModelsTrained;
+          const showResetGlobal = !globalModelTrained && lastResetMode === 'RESET_GLOBAL';
 
           return (
             <div
@@ -311,13 +345,28 @@ export default function PhonePoseVisualizer({
                       </p>
                     )}
 
-                    {/* Non-IID Distribution Context Badge */}
-                    {isSeenLocally !== null && (
-                      <div className="pt-1">
-                        {isSeenLocally ? (
+                    {/* Non-IID Distribution & Reset Context Badge */}
+                    <div className="pt-1">
+                      {showResetAll ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                          ✕ Local &amp; Global Weights Reset (0/50 trained across all 6
+                          poses)
+                        </span>
+                      ) : showResetGlobal ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                          ⟲ Global Model Reset (0/6 global coverage — awaiting FedAvg or
+                          republish)
+                        </span>
+                      ) : isPrimaryPose !== null ? (
+                        isPrimaryPose ? (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                             ✓ In {card.role === 'CLIENT_A' ? 'Client A' : 'Client B'}{' '}
                             Local Training Distribution (50 samples)
+                          </span>
+                        ) : globalModelTrained && activeModel === 'GLOBAL' ? (
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-teal-500/20 text-teal-300 border border-teal-500/40">
+                            ⇄ Covered by Federated Global Model (0 local / 50 peer
+                            samples)
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
@@ -325,27 +374,69 @@ export default function PhonePoseVisualizer({
                             {card.role === 'CLIENT_A' ? 'Client A' : 'Client B'} — Needs
                             GLOBAL Model)
                           </span>
-                        )}
-                      </div>
-                    )}
+                        )
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
-                {/* Non-IID Local Training Poses Chips */}
+                {/* Non-IID 6-Pose Domain Coverage Chips */}
                 <div>
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-slate-500 mb-1.5">
                     <span className="font-semibold uppercase tracking-wider">
-                      6-Pose Domain Coverage ({card.role === 'CLIENT_A' ? 'Client A' : 'Client B'})
+                      6-Pose Domain Coverage (
+                      {card.role === 'CLIENT_A' ? 'Client A' : 'Client B'})
                     </span>
-                    <span>
-                      Green = Primary Local Training (50/pose) • Gray = Unseen Locally (0/pose)
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {showResetAll ? (
+                        <span className="text-rose-600 font-bold font-mono">
+                          ✕ Reset All Edge: Training 0/50
+                        </span>
+                      ) : showResetGlobal ? (
+                        <span className="text-amber-700 font-bold font-mono">
+                          ⟲ Reset Global: Global 0/6 • Local Train 50/50
+                        </span>
+                      ) : (
+                        <span className="font-mono text-[11px]">
+                          Primary Train: <strong>50/50</strong> • Unseen Train:{' '}
+                          <strong>0/50</strong>
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-1.5">
                     {POSE_NAMES.map((pose) => {
                       const isPrimary = card.primaryPoses.includes(pose);
                       const isCurrent =
                         currentPose.toLowerCase() === pose.toLowerCase();
+
+                      let chipStyle =
+                        'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200';
+                      let trainText = isPrimary ? 'Train: 50/50' : 'Train: 0/50';
+
+                      if (showResetAll) {
+                        chipStyle =
+                          'bg-rose-50/70 text-rose-900 border-dashed border-rose-300 hover:bg-rose-100/70';
+                        trainText = 'Train: 0/50';
+                      } else if (showResetGlobal) {
+                        chipStyle = isPrimary
+                          ? 'bg-amber-50 text-amber-900 border-dashed border-amber-300 hover:bg-amber-100'
+                          : 'bg-slate-100 text-slate-400 border-dashed border-slate-300 hover:bg-slate-200';
+                        trainText = isPrimary ? 'Train: 50/50' : 'Train: 0/50';
+                      } else if (isPrimary && localModelsTrained) {
+                        chipStyle =
+                          'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100';
+                        trainText = '✓ Train: 50/50';
+                      } else if (
+                        !isPrimary &&
+                        globalModelTrained &&
+                        activeModel === 'GLOBAL'
+                      ) {
+                        chipStyle =
+                          'bg-teal-50 text-teal-900 border-teal-300 hover:bg-teal-100';
+                        trainText = 'Train: 0/50 (FL)';
+                      }
+
                       return (
                         <button
                           key={pose}
@@ -353,28 +444,16 @@ export default function PhonePoseVisualizer({
                           onClick={() =>
                             onSimulatePose(card.assignedClientId, pose)
                           }
-                          title={
-                            simulationEnabled
-                              ? `Simulate ${pose} on ${card.assignedClientId}`
-                              : `${pose} (${
-                                  isPrimary
-                                    ? 'Primary local training pose'
-                                    : 'Unseen in local training'
-                                }) — click to simulate`
-                          }
+                          title={`${pose} — click to simulate pose on ${card.assignedClientId}`}
                           className={`px-2 py-1.5 rounded-lg text-[11px] font-medium border text-center transition-all cursor-pointer ${
                             isCurrent
                               ? 'ring-2 ring-offset-1 ring-indigo-600 font-bold '
                               : ''
-                          }${
-                            isPrimary
-                              ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
-                              : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
-                          }`}
+                          }${chipStyle}`}
                         >
-                          <div className="truncate">{pose}</div>
-                          <div className="text-[9px] font-mono opacity-75">
-                            {isPrimary ? '50 train' : '0 train'}
+                          <div className="truncate font-semibold">{pose}</div>
+                          <div className="text-[10px] font-mono mt-0.5">
+                            {trainText}
                           </div>
                         </button>
                       );
@@ -462,4 +541,3 @@ export default function PhonePoseVisualizer({
     </section>
   );
 }
-

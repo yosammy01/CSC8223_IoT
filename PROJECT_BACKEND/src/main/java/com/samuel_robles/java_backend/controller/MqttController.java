@@ -75,6 +75,13 @@ public class MqttController {
         return federatedAggregationService.status();
     }
 
+    @PostMapping("/federated/status/reset")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public PublishResponse resetFederatedStatus() {
+        federatedAggregationService.resetAggregationStatus();
+        return new PublishResponse("reset", Instant.now());
+    }
+
     @PostMapping("/federated/model/republish")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public PublishResponse republishGlobalModel() {

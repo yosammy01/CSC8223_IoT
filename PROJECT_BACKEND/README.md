@@ -53,13 +53,15 @@ Expected response:
 
 1. `MqttIntegrationConfig` creates the MQTT publisher and subscriber channels.
 2. Incoming local model payloads are decoded by `QuantizedWeightsCodec`.
-3. `FederatedAggregationService` caches local models, performs equal-weight
-   FedAvg after the configured number of clients have submitted updates, stores
-   snapshots, and publishes the global model.
+3. `FederatedAggregationService` keeps the latest update from each client only
+   in memory, performs equal-weight FedAvg whenever all configured clients have
+   contributed, stores only the global snapshot, and publishes the global model
+   after every subsequent client update.
 4. `MqttController` exposes REST controls for publishing commands and viewing
    federated status.
 5. `TelemetryWebSocketHandler` broadcasts device telemetry to dashboard clients.
-6. JPA stores local and global model snapshots in PostgreSQL.
+6. JPA stores the global model snapshot in PostgreSQL. Local models remain on
+   the phones and are not persisted or cached by the server.
 
 Raw sensor samples and extracted training examples are not sent to this server.
 The server receives model-update bytes and the telemetry needed by the dashboard.
@@ -74,7 +76,19 @@ The server receives model-update bytes and the telemetry needed by the dashboard
 | Device commands | `federated/commands` |
 | Device telemetry | `federated/telemetry/<clientId>` |
 
-Local and global model payloads use the Android-compatible format: a 4-byte
+The current Android model has 24 sensor-derived inputs, 16 hidden units, and
+6 output classes, for 502 trainable weights. Quantized updates must be exactly
+506 bytes (4-byte big-endian maxAbs plus 502 signed bytes); unquantized updates
+must be exactly 2008 bytes (502 big-endian floats). The backend detects the
+format from the exact payload size and rejects legacy or malformed model
+updates.
+
+Local updates are used only in memory for the active training run. The latest
+update from each client remains available so later batches from one client can
+be aggregated with the other client's latest model. They are cleared by the
+FedAvg status reset and are not stored in PostgreSQL or the server's
+latest-message cache. Local and global model payloads use the Android-compatible
+format: a 4-byte
 big-endian `maxAbs` float followed by signed 8-bit quantized weights. The
 backend averages the dequantized values and re-encodes the result.
 
@@ -88,9 +102,10 @@ backend averages the dequantized values and re-encodes the result.
 | `GET` | `/api/mqtt/latest` | Read the latest received MQTT message |
 | `POST` | `/api/mqtt/federated/command` | Publish a JSON command |
 | `GET` | `/api/mqtt/federated/status` | Read aggregation counters and model state |
+| `POST` | `/api/mqtt/federated/status/reset` | Clear the current FedAvg round and counters without deleting the global model |
 | `POST` | `/api/mqtt/federated/model/toggle` | Send `LOCAL` or `GLOBAL` model selection |
 | `POST` | `/api/mqtt/federated/model/republish` | Republish the latest global model |
-| `POST` | `/api/mqtt/federated/model/republish-all` | Republish global and cached local models |
+| `POST` | `/api/mqtt/federated/model/republish-all` | Republish the persisted global model |
 | `POST` | `/api/mqtt/federated/training` | Send a `START_TRAINING` command |
 
 Examples:

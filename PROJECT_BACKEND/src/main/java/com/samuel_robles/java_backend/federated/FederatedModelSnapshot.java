@@ -8,8 +8,10 @@ import java.time.Instant;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.Column;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "federated_model_snapshots")
@@ -22,7 +24,8 @@ public class FederatedModelSnapshot {
     private String clientId;
     private Instant updatedAt;
 
-    @Lob
+    @Column(columnDefinition = "bytea")
+    @JdbcTypeCode(SqlTypes.VARBINARY)
     private byte[] payload;
 
     protected FederatedModelSnapshot() {

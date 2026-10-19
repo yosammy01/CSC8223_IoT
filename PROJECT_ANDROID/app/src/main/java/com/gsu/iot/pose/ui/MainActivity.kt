@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.gsu.iot.pose.DatasetPersister
 import com.gsu.iot.pose.FeatureExtractor
 import com.gsu.iot.pose.SensorService
 import com.gsu.iot.pose.federated.MqttClientManager
@@ -47,6 +48,9 @@ import com.gsu.iot.pose.federated.Quantizer
 import com.gsu.iot.pose.mlp.ModelManager
 import com.gsu.iot.pose.ui.theme.FederatedPoseClientTheme
 import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -153,11 +157,45 @@ fun PoseClientScreen() {
         "Portrait Down", "Landscape Left", "Landscape Right"
     )
 
-    var isLocalModelLoadedFromMqtt by remember { mutableStateOf(false) }
+    var globalModelLastSyncTime by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        MqttClientManager.onLocalModelReloaded = {
-            isLocalModelLoadedFromMqtt = true
+        // Load the datasets from local persistent storage on startup
+        val savedEvalData = DatasetPersister.loadEvalDataset(context)
+        savedEvalData.forEach { (key, value) ->
+            evalDataset[key] = value
+        }
+
+        val savedTrainingData = DatasetPersister.loadTrainingDataset(context)
+        savedTrainingData.forEach { (key, value) ->
+            trainingDataset[key] = value
+        }
+        if (trainingDataset.isNotEmpty()) {
+            ModelManager.trainLocalEpochsOnDataset(trainingDataset, epochs = 20)
+        }
+
+        MqttClientManager.onGlobalModelReloaded = {
+            val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+            globalModelLastSyncTime = formatter.format(Date())
+        }
+        MqttClientManager.onGlobalModelResetCommand = {
+            globalModelLastSyncTime = ""
+            globalAccuracyResult = null
+            if (ModelManager.activeModelForInference == ModelManager.ActiveModel.GLOBAL) {
+                predictedPose = "Unknown"
+            }
+        }
+        MqttClientManager.onResetCommand = {
+            trainingDataset.clear()
+            evalDataset.clear()
+            DatasetPersister.clearEvalDataset(context)
+            DatasetPersister.clearTrainingDataset(context)
+            localAccuracyResult = null
+            globalAccuracyResult = null
+            predictedPose = "Unknown"
+            globalModelLastSyncTime = ""
+            isCountingDown = false
+            isRecordingActive = false
         }
         MqttClientManager.onStartTrainingCommand = {
             // Server commanded us to start a baseline or quantized training run
@@ -239,6 +277,7 @@ fun PoseClientScreen() {
                             if (samplesList.size >= targetSampleLimit) {
                                 isRecordingActive = false
                                 retrainFromDataset()
+                                DatasetPersister.saveTrainingDataset(context, trainingDataset)
                                 playBeepSound(ToneGenerator.TONE_PROP_BEEP2, 300)
                             }
 
@@ -260,6 +299,7 @@ fun PoseClientScreen() {
 
                             if (evalList.size >= evalSampleLimit) {
                                 isRecordingActive = false
+                                DatasetPersister.saveEvalDataset(context, evalDataset)
                                 playBeepSound(ToneGenerator.TONE_PROP_BEEP2, 300)
                             }
                         } else {
@@ -358,6 +398,16 @@ fun PoseClientScreen() {
                         label = { Text("GLOBAL") }
                     )
                 }
+
+                if (globalModelLastSyncTime.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Global Model Synced at: $globalModelLastSyncTime",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Text("Predicted Pose", style = MaterialTheme.typography.labelLarge)
@@ -367,6 +417,7 @@ fun PoseClientScreen() {
                 OutlinedButton(
                     onClick = {
                         trainingDataset.clear()
+                        DatasetPersister.clearTrainingDataset(context)
                         ModelManager.resetAll()
                         predictedPose = "Unknown"
                     }
@@ -447,7 +498,14 @@ fun PoseClientScreen() {
                 
                 poseNames.forEachIndexed { index, name ->
                     val samplesCount = trainingDataset[index]?.size ?: 0
-                    val isTrained = samplesCount >= targetSampleLimit || isLocalModelLoadedFromMqtt
+                    val isTrainedLocally = samplesCount >= targetSampleLimit
+                    
+                    val statusText = if (isTrainedLocally) {
+                        "✓ (50/50)"
+                    } else {
+                        "($samplesCount/$targetSampleLimit)"
+                    }
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 2.dp)
@@ -460,7 +518,7 @@ fun PoseClientScreen() {
                                 isRecordingActive = false
                             }
                         )
-                        Text("$name ${if (isTrained) "✓ (50/50)" else "($samplesCount/$targetSampleLimit)"}")
+                        Text("$name $statusText")
                     }
                 }
                 
@@ -473,6 +531,7 @@ fun PoseClientScreen() {
                     OutlinedButton(
                         onClick = {
                             trainingDataset.remove(activeTargetPose)
+                            DatasetPersister.saveTrainingDataset(context, trainingDataset)
                             isCountingDown = false
                             isRecordingActive = false
                             retrainFromDataset()
@@ -486,6 +545,7 @@ fun PoseClientScreen() {
                     OutlinedButton(
                         onClick = {
                             trainingDataset.clear()
+                            DatasetPersister.clearTrainingDataset(context)
                             isCountingDown = false
                             isRecordingActive = false
                             ModelManager.resetAll()
@@ -615,6 +675,7 @@ fun PoseClientScreen() {
                 OutlinedButton(
                     onClick = {
                         evalDataset.clear()
+                        DatasetPersister.clearEvalDataset(context)
                         localAccuracyResult = null
                         globalAccuracyResult = null
                         isCountingDown = false

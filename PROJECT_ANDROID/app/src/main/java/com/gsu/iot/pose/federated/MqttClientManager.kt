@@ -47,8 +47,10 @@ object MqttClientManager {
     private var isConnecting = false
 
     var useQuantization = true
-    var onLocalModelReloaded: (() -> Unit)? = null
+    var onGlobalModelReloaded: (() -> Unit)? = null
     var onStartTrainingCommand: (() -> Unit)? = null
+    var onResetCommand: (() -> Unit)? = null
+    var onGlobalModelResetCommand: (() -> Unit)? = null
 
     var serverIp by mutableStateOf(DEFAULT_IP)
         private set
@@ -162,11 +164,7 @@ object MqttClientManager {
             client.subscribe(TOPIC_GLOBAL_WEIGHTS, 1)
             client.subscribe(TOPIC_COMMANDS, 1)
             
-            // Subscribe to this specific client's local weights topic for server-backed local model reloads!
-            val myLocalTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
-            client.subscribe(myLocalTopic, 1)
-            
-            Log.i(TAG, "Subscribed to global weights, commands, and $myLocalTopic")
+            Log.i(TAG, "Subscribed to global weights, commands")
         } catch (e: Exception) {
             Log.e(TAG, "Exception during subscribe", e)
         }
@@ -233,20 +231,15 @@ object MqttClientManager {
     }
 
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
-        val myLocalTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
         when (topic) {
             TOPIC_GLOBAL_WEIGHTS -> {
                 Log.d(TAG, "Received global weights update from broker")
                 val payload = message.payload
-                val floats = if (payload.size < 500) Quantizer.dequantize(payload) else Quantizer.fromRawByteArray(payload)
+                // With 502 parameters, quantized payload is 506 bytes. Raw payload is 2008 bytes.
+                // We use < 1000 to safely distinguish between the two formats.
+                val floats = if (payload.size < 1000) Quantizer.dequantize(payload) else Quantizer.fromRawByteArray(payload)
                 ModelManager.federatedModel.setWeights(floats)
-            }
-            myLocalTopic -> {
-                Log.d(TAG, "Received local model reload from broker for $activeClientId")
-                val payload = message.payload
-                val floats = if (payload.size < 500) Quantizer.dequantize(payload) else Quantizer.fromRawByteArray(payload)
-                ModelManager.localModel.setWeights(floats)
-                onLocalModelReloaded?.invoke()
+                onGlobalModelReloaded?.invoke()
             }
             TOPIC_COMMANDS -> {
                 val payloadString = String(message.payload)
@@ -263,9 +256,11 @@ object MqttClientManager {
                         }
                     } else if (command == "RESET" || command == "RESET_ALL") {
                         ModelManager.resetAll()
+                        onResetCommand?.invoke()
                         Log.i(TAG, "Received RESET command from server/dashboard")
                     } else if (command == "RESET_GLOBAL") {
                         ModelManager.federatedModel.reset()
+                        onGlobalModelResetCommand?.invoke()
                         Log.i(TAG, "Received RESET_GLOBAL command from server/dashboard")
                     } else if (command == "START_TRAINING") {
                         useQuantization = json.optBoolean("use_quantization", true)

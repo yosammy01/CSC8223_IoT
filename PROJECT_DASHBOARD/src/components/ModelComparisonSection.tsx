@@ -37,7 +37,11 @@ interface ModelComparisonSectionProps {
   evaluationMode: 'REFERENCE' | 'LIVE';
   onSwitchEvaluationMode: (mode: 'REFERENCE' | 'LIVE') => void;
   onRecordEvaluationSample: (
-    targetModel: 'CLIENT_A_LOCAL' | 'CLIENT_B_LOCAL' | 'FEDERATED_GLOBAL_8BIT',
+    targetModel:
+      | 'CLIENT_A_LOCAL'
+      | 'CLIENT_B_LOCAL'
+      | 'FEDERATED_GLOBAL_8BIT'
+      | 'FEDERATED_GLOBAL_32BIT',
     truePoseIndex: number,
     predictedPoseIndex: number
   ) => void;
@@ -233,15 +237,12 @@ export default function ModelComparisonSection({
 }: ModelComparisonSectionProps) {
   const [selectedTruePoseIdx, setSelectedTruePoseIdx] = useState<number>(0);
   const [selectedEvalTargetModel, setSelectedEvalTargetModel] = useState<
-    'CLIENT_A_LOCAL' | 'CLIENT_B_LOCAL' | 'FEDERATED_GLOBAL_8BIT'
+    | 'CLIENT_A_LOCAL'
+    | 'CLIENT_B_LOCAL'
+    | 'FEDERATED_GLOBAL_8BIT'
+    | 'FEDERATED_GLOBAL_32BIT'
   >('FEDERATED_GLOBAL_8BIT');
   const [manualPredPoseIdx, setManualPredPoseIdx] = useState<number>(0);
-
-  // On-device Eval/Calib quick-log state (mirrors MainActivity.kt Eval / Calib tab)
-  const [deviceALocalAcc, setDeviceALocalAcc] = useState<string>('48.3');
-  const [deviceAGlobalAcc, setDeviceAGlobalAcc] = useState<string>('93.3');
-  const [deviceBLocalAcc, setDeviceBLocalAcc] = useState<string>('48.3');
-  const [deviceBGlobalAcc, setDeviceBGlobalAcc] = useState<string>('93.3');
 
   const resolvePoseIndex = (poseName: string | undefined): number | null => {
     if (!poseName) return null;
@@ -287,6 +288,17 @@ export default function ModelComparisonSection({
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
+            onClick={() => onSwitchEvaluationMode('LIVE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+              evaluationMode === 'LIVE'
+                ? 'bg-indigo-600 text-white border-indigo-600'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            Interactive / Live Capture (Saved Locally)
+          </button>
+          <button
+            type="button"
             onClick={() => onSwitchEvaluationMode('REFERENCE')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
               evaluationMode === 'REFERENCE'
@@ -295,17 +307,6 @@ export default function ModelComparisonSection({
             }`}
           >
             Reference Benchmark (60 samples)
-          </button>
-          <button
-            type="button"
-            onClick={() => onSwitchEvaluationMode('LIVE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-              evaluationMode === 'LIVE'
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50'
-            }`}
-          >
-            Interactive / Live Capture
           </button>
         </div>
       </div>
@@ -316,7 +317,7 @@ export default function ModelComparisonSection({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="text-sm font-bold text-indigo-950">
-                Live Demo Prediction Recorder (Updates Confusion Matrices & Macro-F1 Live)
+                Live Demo Prediction Recorder (Starts at 0 • Auto-Saved in Browser)
               </h3>
               <p className="text-xs text-indigo-800">
                 Select the physical ground-truth pose and target model, then capture live
@@ -328,7 +329,7 @@ export default function ModelComparisonSection({
               onClick={onResetLiveEvaluation}
               className="text-xs px-2.5 py-1 rounded bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 font-semibold cursor-pointer"
             >
-              Reset Live Matrices to Reference
+              Clear Live Matrices (Reset to 0)
             </button>
           </div>
 
@@ -345,6 +346,7 @@ export default function ModelComparisonSection({
                       | 'CLIENT_A_LOCAL'
                       | 'CLIENT_B_LOCAL'
                       | 'FEDERATED_GLOBAL_8BIT'
+                      | 'FEDERATED_GLOBAL_32BIT'
                   )
                 }
                 className="w-full bg-white border border-indigo-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800"
@@ -352,7 +354,10 @@ export default function ModelComparisonSection({
                 <option value="CLIENT_A_LOCAL">Client A Local Model (Isolated)</option>
                 <option value="CLIENT_B_LOCAL">Client B Local Model (Isolated)</option>
                 <option value="FEDERATED_GLOBAL_8BIT">
-                  Federated Global Model (Collaborative)
+                  Federated Global Model (8-Bit Quantized)
+                </option>
+                <option value="FEDERATED_GLOBAL_32BIT">
+                  Federated Global Model (32-Bit Baseline)
                 </option>
               </select>
             </div>
@@ -599,66 +604,6 @@ export default function ModelComparisonSection({
         <ConfusionMatrixCard summary={clientALocalEval} accentColor="blue" />
         <ConfusionMatrixCard summary={clientBLocalEval} accentColor="emerald" />
         <ConfusionMatrixCard summary={global8BitEval} accentColor="teal" />
-      </div>
-
-      {/* On-Device Calibration Benchmark Sync (matches MainActivity.kt Eval / Calib Tab) */}
-      <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Android On-Device Calibration Benchmark Log (MainActivity &ldquo;Eval / Calib&rdquo; Tab)
-          </h3>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Each phone independently records 10 calibration samples across all 6 poses (60
-            samples) and computes on-device Local vs. Global accuracy.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-          <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-            <label className="block text-[10px] font-semibold uppercase text-slate-400">
-              Phone A Local Acc (%)
-            </label>
-            <input
-              type="text"
-              value={deviceALocalAcc}
-              onChange={(e) => setDeviceALocalAcc(e.target.value)}
-              className="w-full font-mono font-bold text-rose-600 text-sm mt-0.5 focus:outline-none"
-            />
-          </div>
-          <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-            <label className="block text-[10px] font-semibold uppercase text-slate-400">
-              Phone A Global Acc (%)
-            </label>
-            <input
-              type="text"
-              value={deviceAGlobalAcc}
-              onChange={(e) => setDeviceAGlobalAcc(e.target.value)}
-              className="w-full font-mono font-bold text-teal-600 text-sm mt-0.5 focus:outline-none"
-            />
-          </div>
-          <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-            <label className="block text-[10px] font-semibold uppercase text-slate-400">
-              Phone B Local Acc (%)
-            </label>
-            <input
-              type="text"
-              value={deviceBLocalAcc}
-              onChange={(e) => setDeviceBLocalAcc(e.target.value)}
-              className="w-full font-mono font-bold text-rose-600 text-sm mt-0.5 focus:outline-none"
-            />
-          </div>
-          <div className="bg-white p-2.5 rounded-lg border border-slate-200">
-            <label className="block text-[10px] font-semibold uppercase text-slate-400">
-              Phone B Global Acc (%)
-            </label>
-            <input
-              type="text"
-              value={deviceBGlobalAcc}
-              onChange={(e) => setDeviceBGlobalAcc(e.target.value)}
-              className="w-full font-mono font-bold text-teal-600 text-sm mt-0.5 focus:outline-none"
-            />
-          </div>
-        </div>
       </div>
     </section>
   );

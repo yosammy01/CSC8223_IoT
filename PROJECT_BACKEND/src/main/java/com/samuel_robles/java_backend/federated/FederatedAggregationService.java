@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import com.samuel_robles.java_backend.mqtt.MqttPublisher;
@@ -20,10 +21,10 @@ public class FederatedAggregationService {
     private final MqttPublisher mqttPublisher;
     private final int expectedClients;
     private final String globalWeightsTopic;
-    private final String localWeightsTopic;
     private final FederatedModelSnapshotRepository snapshotRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final Map<String, float[]> pendingUpdates = new LinkedHashMap<>();
-    private final Map<String, byte[]> latestLocalWeights = new LinkedHashMap<>();
+    private final Map<String, float[]> latestClientWeights = new LinkedHashMap<>();
     private float[] latestGlobalWeights;
     private Instant lastAggregationAt;
     private final AtomicLong receivedUpdates = new AtomicLong();
@@ -34,7 +35,8 @@ public class FederatedAggregationService {
             @Value("${app.federated.expected-clients:2}") int expectedClients,
             @Value("${app.mqtt.global-weights-topic:federated/global/weights}") String globalWeightsTopic,
             @Value("${app.mqtt.local-weights-topic:federated/local/weights}") String localWeightsTopic,
-            FederatedModelSnapshotRepository snapshotRepository) {
+            FederatedModelSnapshotRepository snapshotRepository,
+            JdbcTemplate jdbcTemplate) {
         if (expectedClients < 1) {
             throw new IllegalArgumentException("app.federated.expected-clients must be at least 1.");
         }
@@ -42,36 +44,63 @@ public class FederatedAggregationService {
         this.expectedClients = expectedClients;
         this.globalWeightsTopic = globalWeightsTopic;
         this.snapshotRepository = snapshotRepository;
-        this.localWeightsTopic = localWeightsTopic.endsWith("/#")
-                ? localWeightsTopic.substring(0, localWeightsTopic.length() - 2)
-                : localWeightsTopic;
+        this.jdbcTemplate = jdbcTemplate;
+        migratePayloadColumn();
+        snapshotRepository.deleteByModelType("LOCAL");
         loadPersistedModels();
+    }
+
+    private void migratePayloadColumn() {
+        String dataType = jdbcTemplate.queryForObject(
+                """
+                select udt_name
+                from information_schema.columns
+                where table_schema = current_schema()
+                  and table_name = 'federated_model_snapshots'
+                  and column_name = 'payload'
+                """,
+                String.class);
+        if ("oid".equals(dataType)) {
+            jdbcTemplate.execute(
+                    "alter table federated_model_snapshots "
+                            + "alter column payload type bytea using lo_get(payload)");
+        }
     }
 
     private void loadPersistedModels() {
         snapshotRepository.findBySnapshotKey("GLOBAL").ifPresent(snapshot -> {
-            latestGlobalWeights = QuantizedWeightsCodec.decode(snapshot.getPayload());
-            lastAggregationAt = snapshot.getUpdatedAt();
+            try {
+                float[] weights = QuantizedWeightsCodec.decode(snapshot.getPayload());
+                if (weights.length == QuantizedWeightsCodec.EXPECTED_WEIGHT_COUNT) {
+                    latestGlobalWeights = weights;
+                    lastAggregationAt = snapshot.getUpdatedAt();
+                } else {
+                    snapshotRepository.deleteById("GLOBAL");
+                }
+            } catch (IllegalArgumentException incompatibleSnapshot) {
+                snapshotRepository.deleteById("GLOBAL");
+            }
         });
-        for (FederatedModelSnapshot snapshot : snapshotRepository.findByModelType("LOCAL")) {
-            latestLocalWeights.put(snapshot.getClientId(), snapshot.getPayload());
-        }
     }
 
     public synchronized void accept(String clientId, byte[] payload) {
-        cacheLocalWeights(clientId, payload);
         float[] update = QuantizedWeightsCodec.decode(payload);
+        if (update.length != QuantizedWeightsCodec.EXPECTED_WEIGHT_COUNT) {
+            throw new IllegalArgumentException("Federated updates must contain exactly 502 weights.");
+        }
         receivedUpdates.incrementAndGet();
+        latestClientWeights.put(clientId, update);
         pendingUpdates.put(clientId, update);
-        if (pendingUpdates.size() < expectedClients) {
+        if (latestClientWeights.size() < expectedClients) {
             return;
         }
 
         float[] aggregate = new float[update.length];
-        int updateCount = pendingUpdates.size();
-        for (float[] clientUpdate : pendingUpdates.values()) {
+        int updateCount = latestClientWeights.size();
+        for (float[] clientUpdate : latestClientWeights.values()) {
             if (clientUpdate.length != aggregate.length) {
                 pendingUpdates.clear();
+                latestClientWeights.clear();
                 throw new IllegalArgumentException(
                         "All models in a federated round must have the same weight count.");
             }
@@ -92,28 +121,22 @@ public class FederatedAggregationService {
                 true);
     }
 
-    public synchronized void cacheLocalWeights(String clientId, byte[] payload) {
+    public synchronized void validateClientId(String clientId) {
         if (clientId == null || clientId.isBlank()) {
             throw new IllegalArgumentException("A client ID is required for local federated weights.");
-        }
-        latestLocalWeights.put(clientId, payload.clone());
-        snapshotRepository.save(new FederatedModelSnapshot(
-                "LOCAL:" + clientId, "LOCAL", clientId, payload, Instant.now()));
-    }
-
-    public synchronized void republishLatestLocalWeights() {
-        for (Map.Entry<String, byte[]> entry : latestLocalWeights.entrySet()) {
-            mqttPublisher.publish(
-                    entry.getValue(),
-                    localWeightsTopic + "/" + entry.getKey(),
-                    1,
-                    true);
         }
     }
 
     public synchronized void republishAllModels() {
         republishLatestGlobalWeights();
-        republishLatestLocalWeights();
+    }
+
+    public synchronized void resetAggregationStatus() {
+        pendingUpdates.clear();
+        latestClientWeights.clear();
+        receivedUpdates.set(0);
+        completedRounds.set(0);
+        lastAggregationAt = null;
     }
 
     public synchronized void republishLatestGlobalWeights() {
