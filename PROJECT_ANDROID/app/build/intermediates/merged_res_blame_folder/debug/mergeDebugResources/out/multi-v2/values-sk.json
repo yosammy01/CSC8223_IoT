@@ -4,24 +4,7 @@
             "outputFile": "com.gsu.iot.pose.app-mergeDebugResources-42:/values-sk/values-sk.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\samue\\.gradle\\caches\\9.8.1\\transforms\\af0312fdd6ecfdc40604406a750c6a40\\transformed\\foundation-release\\res\\values-sk\\values-sk.xml",
-                    "from": {
-                        "startLines": "2,3",
-                        "startColumns": "4,4",
-                        "startOffsets": "55,139",
-                        "endColumns": "83,86",
-                        "endOffsets": "134,221"
-                    },
-                    "to": {
-                        "startLines": "83,84",
-                        "startColumns": "4,4",
-                        "startOffsets": "8475,8559",
-                        "endColumns": "83,86",
-                        "endOffsets": "8554,8641"
-                    }
-                },
-                {
-                    "source": "C:\\Users\\samue\\.gradle\\caches\\9.8.1\\transforms\\11205ec9e021a0ba72d5a6703cef4f58\\transformed\\core-1.12.0\\res\\values-sk\\values-sk.xml",
+                    "source": "C:\\Users\\samue\\.gradle\\caches\\8.13\\transforms\\f5735a450500b063190ad0cbee2a2fe0\\transformed\\core-1.12.0\\res\\values-sk\\values-sk.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9",
                         "startColumns": "4,4,4,4,4,4,4,4",
@@ -38,7 +21,7 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\samue\\.gradle\\caches\\9.8.1\\transforms\\5852bae57df6318f7b0d84b6eb4b5a44\\transformed\\ui-release\\res\\values-sk\\values-sk.xml",
+                    "source": "C:\\Users\\samue\\.gradle\\caches\\8.13\\transforms\\74b333252f54b5f3a1e4fa5f008476c0\\transformed\\ui-release\\res\\values-sk\\values-sk.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
@@ -55,7 +38,24 @@
                     }
                 },
                 {
-                    "source": "C:\\Users\\samue\\.gradle\\caches\\9.8.1\\transforms\\099dd94bfbda7985f5b98245401617c5\\transformed\\material3-release\\res\\values-sk\\values-sk.xml",
+                    "source": "C:\\Users\\samue\\.gradle\\caches\\8.13\\transforms\\8c33e5a89f4d94abd9608e88ea16644c\\transformed\\foundation-release\\res\\values-sk\\values-sk.xml",
+                    "from": {
+                        "startLines": "2,3",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,139",
+                        "endColumns": "83,86",
+                        "endOffsets": "134,221"
+                    },
+                    "to": {
+                        "startLines": "83,84",
+                        "startColumns": "4,4",
+                        "startOffsets": "8475,8559",
+                        "endColumns": "83,86",
+                        "endOffsets": "8554,8641"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\samue\\.gradle\\caches\\8.13\\transforms\\3054464aefd48e5026e11e144323ce73\\transformed\\material3-release\\res\\values-sk\\values-sk.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
