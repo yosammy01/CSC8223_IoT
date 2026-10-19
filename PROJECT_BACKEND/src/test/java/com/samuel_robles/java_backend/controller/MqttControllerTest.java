@@ -1,3 +1,7 @@
+/**
+ * Tests MQTT publishing and federated orchestration REST endpoints.
+ * See README.md for endpoint payloads and command semantics.
+ */
 package com.samuel_robles.java_backend.controller;
 
 import static org.mockito.ArgumentMatchers.eq;

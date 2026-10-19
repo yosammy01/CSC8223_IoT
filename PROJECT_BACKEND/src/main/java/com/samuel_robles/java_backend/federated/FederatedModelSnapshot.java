@@ -1,3 +1,7 @@
+/**
+ * JPA entity for persisted local and global federated model payloads.
+ * See README.md for persistence and database configuration.
+ */
 package com.samuel_robles.java_backend.federated;
 
 import java.time.Instant;

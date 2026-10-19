@@ -1,3 +1,7 @@
+/**
+ * Configures MQTT connections, inbound routing, and outbound message handling.
+ * See README.md for broker URLs and topic configuration.
+ */
 package com.samuel_robles.java_backend.config;
 
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;

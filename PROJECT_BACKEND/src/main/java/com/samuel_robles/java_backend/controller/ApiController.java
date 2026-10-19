@@ -1,3 +1,7 @@
+/**
+ * Exposes the backend information and health-check endpoints.
+ * See README.md for the API contract and curl examples.
+ */
 package com.samuel_robles.java_backend.controller;
 
 import java.time.Instant;

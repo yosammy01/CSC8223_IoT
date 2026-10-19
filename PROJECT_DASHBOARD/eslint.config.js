@@ -1,3 +1,16 @@
+/**
+ * ============================================================================
+ * FILE README: eslint.config.js
+ * ============================================================================
+ * Purpose:
+ *   Flat ESLint configuration for TypeScript and React 19 code quality checks.
+ *
+ * Details:
+ *   Enforces recommended JavaScript, TypeScript, React Hooks, and Vite React
+ *   Refresh rules across all `.ts` and `.tsx` source files while ignoring
+ *   build output in `dist/`.
+ * ============================================================================
+ */
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'

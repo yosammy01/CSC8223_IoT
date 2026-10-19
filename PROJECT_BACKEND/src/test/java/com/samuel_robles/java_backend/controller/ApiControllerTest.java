@@ -1,3 +1,7 @@
+/**
+ * Tests the backend information and health REST endpoints.
+ * See README.md for endpoint behavior and curl examples.
+ */
 package com.samuel_robles.java_backend.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

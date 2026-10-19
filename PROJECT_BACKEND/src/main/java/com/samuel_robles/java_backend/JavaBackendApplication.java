@@ -1,3 +1,7 @@
+/**
+ * Application entry point for the Spring Boot federated-learning backend.
+ * See README.md for setup, configuration, and run instructions.
+ */
 package com.samuel_robles.java_backend;
 
 import org.springframework.boot.SpringApplication;

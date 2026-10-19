@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * README - MultiLayerPerceptron.kt
+ * ============================================================================
+ * Role: The core Mathematical Neural Network Classifier.
+ * 
+ * Functions:
+ * - A lightweight, natively written 2-layer Neural Network (8 -> 16 -> 6).
+ * - Forward Pass: Sigmoid activation for hidden layer, Softmax for output layer.
+ * - Backward Pass: Computes Cross-Entropy loss and updates 246 parameters 
+ *   (W1, B1, W2, B2) using Stochastic Gradient Descent.
+ * - `trainEpochs`: Supports batch training over multiple epochs (e.g., 20) for
+ *   rapid and confident convergence on edge devices.
+ * ============================================================================
+ */
 package com.gsu.iot.pose.mlp
 
 import kotlin.math.exp

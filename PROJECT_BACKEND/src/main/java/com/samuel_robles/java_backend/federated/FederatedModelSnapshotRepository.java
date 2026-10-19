@@ -1,3 +1,7 @@
+/**
+ * Spring Data repository for federated model snapshots.
+ * See README.md for the database-backed model lifecycle.
+ */
 package com.samuel_robles.java_backend.federated;
 
 import java.util.List;

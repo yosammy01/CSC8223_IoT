@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * README - ModelManager.kt
+ * ============================================================================
+ * Role: State management for the machine learning models.
+ * 
+ * Functions:
+ * - Holds two entirely separate instances of the MLP: `localModel` and `federatedModel`.
+ * - Ensures `localModel` is only ever trained on the device's local sensor data.
+ * - Ensures `federatedModel` is strictly updated via the server's aggregated weights.
+ * - Routes the live inference `predict()` call to whichever model is currently 
+ *   selected as `activeModelForInference` (LOCAL vs GLOBAL).
+ * ============================================================================
+ */
 package com.gsu.iot.pose.mlp
 
 import androidx.compose.runtime.getValue

@@ -1,3 +1,7 @@
+/**
+ * Broadcasts MQTT telemetry to connected dashboard WebSocket clients.
+ * See README.md for the telemetry topic and connection URL.
+ */
 package com.samuel_robles.java_backend.websocket;
 
 import java.io.IOException;

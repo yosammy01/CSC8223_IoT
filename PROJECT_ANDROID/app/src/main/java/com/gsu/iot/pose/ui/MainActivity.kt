@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * README - MainActivity.kt
+ * ============================================================================
+ * Role: The primary User Interface and orchestration layer of the Android App.
+ * 
+ * Functions:
+ * - Manages the Compose UI with three tabs: Inference, Training, and Eval/Calib.
+ * - Handles Android Permissions and launches the foreground `SensorService`.
+ * - Intercepts extracted features from `FeatureExtractor` and routes them to 
+ *   either training datasets, evaluation datasets, or live inference.
+ * - Triggers MQTT telemetry publishing and handles local UI state updates based
+ *   on server commands (like START_TRAINING and Model resets).
+ * ============================================================================
+ */
 package com.gsu.iot.pose.ui
 
 import android.Manifest
@@ -144,6 +159,16 @@ fun PoseClientScreen() {
         MqttClientManager.onLocalModelReloaded = {
             isLocalModelLoadedFromMqtt = true
         }
+        MqttClientManager.onStartTrainingCommand = {
+            // Server commanded us to start a baseline or quantized training run
+            screenMode = AppScreenMode.TRAINING
+            ModelManager.localModel.reset()
+            if (trainingDataset.isNotEmpty()) {
+                ModelManager.trainLocalEpochsOnDataset(trainingDataset, epochs = 20)
+                val localWeights = ModelManager.localModel.getWeights()
+                MqttClientManager.publishLocalWeights(localWeights)
+            }
+        }
     }
 
     // Current pose counts
@@ -178,6 +203,7 @@ fun PoseClientScreen() {
         if (totalEvalSamples > 0) {
             localAccuracyResult = (localCorrect.toFloat() / totalEvalSamples) * 100f
             globalAccuracyResult = (globalCorrect.toFloat() / totalEvalSamples) * 100f
+            MqttClientManager.publishEvaluation(localAccuracyResult!!, globalAccuracyResult!!)
         } else {
             localAccuracyResult = 0f
             globalAccuracyResult = 0f
@@ -219,8 +245,7 @@ fun PoseClientScreen() {
                             val totalSamples = trainingDataset.values.sumOf { it.size }
                             if (totalSamples % 10 == 0) {
                                 val localWeights = ModelManager.localModel.getWeights()
-                                val quantized = Quantizer.quantize(localWeights)
-                                MqttClientManager.publishLocalWeights(quantized)
+                                MqttClientManager.publishLocalWeights(localWeights)
                             }
                         } else {
                             isRecordingActive = false

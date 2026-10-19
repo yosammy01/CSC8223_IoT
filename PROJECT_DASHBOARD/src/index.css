@@ -1,3 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/**
+ * ============================================================================
+ * FILE README: src/index.css
+ * ============================================================================
+ * Purpose:
+ *   Global stylesheet entry point for the React dashboard.
+ *
+ * How It Works:
+ *   Loads Tailwind CSS v4 via `@import "tailwindcss";`, processed through
+ *   `@tailwindcss/postcss` configured in `postcss.config.js`.
+ * ============================================================================
+ */
+@import "tailwindcss";
+

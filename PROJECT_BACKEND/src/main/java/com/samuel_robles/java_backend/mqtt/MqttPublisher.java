@@ -1,3 +1,7 @@
+/**
+ * Publishes text and binary payloads through Spring Integration MQTT.
+ * See README.md for default topics and publishing examples.
+ */
 package com.samuel_robles.java_backend.mqtt;
 
 import org.springframework.beans.factory.annotation.Value;

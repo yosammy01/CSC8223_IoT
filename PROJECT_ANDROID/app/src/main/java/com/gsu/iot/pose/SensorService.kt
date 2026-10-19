@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * README - SensorService.kt
+ * ============================================================================
+ * Role: Background Foreground Service for Continuous Data Collection.
+ * 
+ * Functions:
+ * - Ensures Android does not kill the sensor collection when the screen sleeps 
+ *   or the user navigates away by running as a Foreground Service.
+ * - Registers to the device's hardware `SensorManager` using SENSOR_DELAY_FASTEST.
+ * - Streams raw accelerometer/gravity vectors into the `FeatureExtractor`.
+ * - Includes a fallback mechanism: uses Gravity sensor if available, otherwise 
+ *   falls back to Accelerometer to support a wider range of devices.
+ * ============================================================================
+ */
 package com.gsu.iot.pose
 
 import android.app.NotificationChannel

@@ -1,3 +1,7 @@
+/**
+ * Exposes REST controls for MQTT publishing and federated-model orchestration.
+ * See README.md for endpoint payloads and operational responsibilities.
+ */
 package com.samuel_robles.java_backend.controller;
 
 import java.time.Instant;

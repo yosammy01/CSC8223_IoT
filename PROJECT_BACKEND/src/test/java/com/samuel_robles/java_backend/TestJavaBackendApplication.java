@@ -1,3 +1,7 @@
+/**
+ * Test bootstrap configuration for the backend application context.
+ * See README.md for the test command and project layout.
+ */
 package com.samuel_robles.java_backend;
 
 import org.springframework.boot.SpringApplication;

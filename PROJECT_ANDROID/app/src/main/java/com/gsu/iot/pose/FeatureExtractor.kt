@@ -1,3 +1,20 @@
+/**
+ * ============================================================================
+ * README - FeatureExtractor.kt
+ * ============================================================================
+ * Role: Processes raw sensor streams into normalized machine learning features.
+ * 
+ * Functions:
+ * - Collects raw (X,Y,Z) sensor data into a 100-millisecond sliding window.
+ * - Once the window hits 100ms, computes 8 statistical features:
+ *   1-3. Mean of X, Y, Z
+ *   4-6. Standard Deviation of X, Y, Z
+ *   7. Mean of the Vector Magnitude
+ *   8. Standard Deviation of the Vector Magnitude
+ * - Normalizes these values (approx [-1, 1]) and clears the raw data from memory,
+ *   strictly enforcing the privacy requirement that raw data never leaves the edge.
+ * ============================================================================
+ */
 package com.gsu.iot.pose
 
 import kotlin.math.sqrt

@@ -1,3 +1,7 @@
+/**
+ * Collects client model updates, performs FedAvg, persists snapshots, and
+ * publishes the resulting global model. See README.md for the workflow.
+ */
 package com.samuel_robles.java_backend.federated;
 
 import java.time.Instant;

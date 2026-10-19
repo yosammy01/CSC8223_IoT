@@ -1,3 +1,7 @@
+/**
+ * Handles the generic WebSocket endpoint reserved for dashboard extensions.
+ * See README.md for the backend WebSocket surface.
+ */
 package com.samuel_robles.java_backend.websocket;
 
 import org.springframework.stereotype.Component;

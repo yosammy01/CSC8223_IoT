@@ -1,3 +1,7 @@
+/**
+ * Encodes and decodes the Android-compatible symmetric 8-bit model format.
+ * See README.md for the wire format and quantized aggregation flow.
+ */
 package com.samuel_robles.java_backend.federated;
 
 import java.nio.ByteBuffer;

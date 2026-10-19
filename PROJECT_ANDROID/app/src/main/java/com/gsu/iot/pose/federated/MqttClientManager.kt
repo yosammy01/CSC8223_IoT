@@ -1,3 +1,18 @@
+/**
+ * ============================================================================
+ * README - MqttClientManager.kt
+ * ============================================================================
+ * Role: Handles all bidirectional network communication with the Federated Server.
+ * 
+ * Functions:
+ * - Maintains a persistent MQTT connection to the central Mosquitto Broker.
+ * - Publishes local weights (federated/local/weights/{clientId}) for FedAvg aggregation.
+ * - Subscribes to global weights (federated/global/weights) to receive updated models.
+ * - Subscribes to backend commands (federated/commands) to intercept dashboard triggers
+ *   like SET_MODEL, RESET_GLOBAL, and START_TRAINING (handling 8-bit vs 32-bit flags).
+ * - Transmits live prediction telemetry and evaluation benchmark accuracy results.
+ * ============================================================================
+ */
 package com.gsu.iot.pose.federated
 
 import android.content.Context
@@ -31,7 +46,9 @@ object MqttClientManager {
     private var activeClientIdSuffix: String = "A"
     private var isConnecting = false
 
+    var useQuantization = true
     var onLocalModelReloaded: (() -> Unit)? = null
+    var onStartTrainingCommand: (() -> Unit)? = null
 
     var serverIp by mutableStateOf(DEFAULT_IP)
         private set
@@ -155,20 +172,44 @@ object MqttClientManager {
         }
     }
 
-    fun publishLocalWeights(quantizedWeights: ByteArray) {
+    fun publishLocalWeights(weights: FloatArray) {
         val client = mqttClient
         if (client != null && client.isConnected) {
             try {
-                val message = MqttMessage(quantizedWeights)
+                val payload = if (useQuantization) {
+                    Quantizer.quantize(weights)
+                } else {
+                    Quantizer.toRawByteArray(weights)
+                }
+                val message = MqttMessage(payload)
                 message.qos = 1
                 val perClientTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
                 client.publish(perClientTopic, message)
-                Log.d(TAG, "Published quantized local weights to $perClientTopic. Size: ${quantizedWeights.size} bytes")
+                Log.d(TAG, "Published local weights to $perClientTopic. Quantized: $useQuantization, Size: ${payload.size} bytes")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception publishing weights", e)
             }
         } else {
             Log.w(TAG, "Cannot publish weights, MQTT client is disconnected")
+        }
+    }
+
+    fun publishEvaluation(localAcc: Float, globalAcc: Float) {
+        val client = mqttClient
+        if (client != null && client.isConnected) {
+            try {
+                val json = JSONObject().apply {
+                    put("clientId", activeClientId)
+                    put("localAccuracy", localAcc)
+                    put("globalAccuracy", globalAcc)
+                    put("timestamp", System.currentTimeMillis())
+                }
+                val message = MqttMessage(json.toString().toByteArray())
+                message.qos = 0
+                client.publish("federated/evaluation/$activeClientId", message)
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception publishing evaluation", e)
+            }
         }
     }
 
@@ -196,15 +237,15 @@ object MqttClientManager {
         when (topic) {
             TOPIC_GLOBAL_WEIGHTS -> {
                 Log.d(TAG, "Received global weights update from broker")
-                val quantizedWeights = message.payload
-                val dequantizedFloatArray = Quantizer.dequantize(quantizedWeights)
-                ModelManager.federatedModel.setWeights(dequantizedFloatArray)
+                val payload = message.payload
+                val floats = if (payload.size < 500) Quantizer.dequantize(payload) else Quantizer.fromRawByteArray(payload)
+                ModelManager.federatedModel.setWeights(floats)
             }
             myLocalTopic -> {
                 Log.d(TAG, "Received local model reload from broker for $activeClientId")
-                val quantizedWeights = message.payload
-                val dequantizedFloatArray = Quantizer.dequantize(quantizedWeights)
-                ModelManager.localModel.setWeights(dequantizedFloatArray)
+                val payload = message.payload
+                val floats = if (payload.size < 500) Quantizer.dequantize(payload) else Quantizer.fromRawByteArray(payload)
+                ModelManager.localModel.setWeights(floats)
                 onLocalModelReloaded?.invoke()
             }
             TOPIC_COMMANDS -> {
@@ -227,7 +268,9 @@ object MqttClientManager {
                         ModelManager.federatedModel.reset()
                         Log.i(TAG, "Received RESET_GLOBAL command from server/dashboard")
                     } else if (command == "START_TRAINING") {
-                        Log.d(TAG, "START_TRAINING command received")
+                        useQuantization = json.optBoolean("use_quantization", true)
+                        Log.d(TAG, "START_TRAINING command received. use_quantization=$useQuantization")
+                        onStartTrainingCommand?.invoke()
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to parse command payload", e)

@@ -1,3 +1,7 @@
+/**
+ * Optionally publishes a status message after the MQTT subscription connects.
+ * See README.md for connection-publish configuration.
+ */
 package com.samuel_robles.java_backend.mqtt;
 
 import org.springframework.beans.factory.annotation.Value;

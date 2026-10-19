@@ -1,3 +1,7 @@
+/**
+ * Registers the backend WebSocket endpoints for dashboard and device streams.
+ * See README.md for the telemetry connection URL.
+ */
 package com.samuel_robles.java_backend.config;
 
 import org.springframework.context.annotation.Configuration;

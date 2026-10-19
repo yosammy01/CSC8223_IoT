@@ -1,5 +1,22 @@
+/**
+ * ============================================================================
+ * README - Quantizer.kt
+ * ============================================================================
+ * Role: Core Technical Contribution - Communication Efficiency.
+ * 
+ * Functions:
+ * - Implements 8-bit symmetric min-max quantization for Neural Network weights.
+ * - Compresses 32-bit Float Arrays into a Byte Array consisting of a 4-byte 
+ *   Max Absolute Value header followed by 8-bit signed integers.
+ * - Reduces MQTT payload sizes by 75% (e.g. 984 bytes -> 250 bytes).
+ * - Includes fallback serialization (`toRawByteArray`, `fromRawByteArray`) to 
+ *   support standard 32-bit float transmission for baseline comparison tests.
+ * ============================================================================
+ */
 package com.gsu.iot.pose.federated
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.math.max
 import kotlin.math.min
 
@@ -74,5 +91,31 @@ object Quantizer {
         }
 
         return weights
+    }
+
+    /**
+     * Converts a 32-bit float array directly to a raw byte array (Big-Endian)
+     * for the unquantized baseline comparison.
+     */
+    fun toRawByteArray(weights: FloatArray): ByteArray {
+        val buffer = ByteBuffer.allocate(weights.size * 4)
+        buffer.order(ByteOrder.BIG_ENDIAN)
+        for (w in weights) {
+            buffer.putFloat(w)
+        }
+        return buffer.array()
+    }
+
+    /**
+     * Converts a raw byte array back to a 32-bit float array.
+     */
+    fun fromRawByteArray(bytes: ByteArray): FloatArray {
+        val buffer = ByteBuffer.wrap(bytes)
+        buffer.order(ByteOrder.BIG_ENDIAN)
+        val floats = FloatArray(bytes.size / 4)
+        for (i in floats.indices) {
+            floats[i] = buffer.float
+        }
+        return floats
     }
 }

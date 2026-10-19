@@ -1,3 +1,7 @@
+/**
+ * Keeps the latest received MQTT message available through the REST API.
+ * See README.md for the corresponding endpoint.
+ */
 package com.samuel_robles.java_backend.mqtt;
 
 import java.time.Instant;

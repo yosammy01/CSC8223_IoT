@@ -1,3 +1,7 @@
+/**
+ * Verifies compatibility and round-trip behavior of model quantization.
+ * See README.md for the wire format used by Android and the backend.
+ */
 package com.samuel_robles.java_backend.federated;
 
 import static org.assertj.core.api.Assertions.assertThat;

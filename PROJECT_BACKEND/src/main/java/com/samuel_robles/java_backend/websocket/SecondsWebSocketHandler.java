@@ -1,3 +1,7 @@
+/**
+ * Handles the seconds WebSocket endpoint used by existing client flows.
+ * See README.md for the backend WebSocket surface.
+ */
 package com.samuel_robles.java_backend.websocket;
 
 import org.springframework.stereotype.Component;

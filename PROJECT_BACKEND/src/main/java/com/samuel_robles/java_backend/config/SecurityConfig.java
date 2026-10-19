@@ -1,3 +1,7 @@
+/**
+ * Defines HTTP security and the public API/WebSocket paths used by the clients.
+ * See README.md for the server surface exposed to the dashboard and phones.
+ */
 package com.samuel_robles.java_backend.config;
 
 import org.springframework.context.annotation.Bean;
