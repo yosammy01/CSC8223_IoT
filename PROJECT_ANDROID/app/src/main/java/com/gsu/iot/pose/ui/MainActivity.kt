@@ -38,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.gsu.iot.pose.DatasetPersister
@@ -138,7 +139,8 @@ fun PoseClientScreen() {
     val targetSampleLimit = 50 // 50 training samples per pose
     val evalSampleLimit = 10   // 10 evaluation samples per pose
 
-    var predictedPose by remember { mutableStateOf("Unknown") }
+    var localPredictedPose by remember { mutableStateOf("Unknown") }
+    var globalPredictedPose by remember { mutableStateOf("Unknown") }
     var activeTargetPose by remember { mutableIntStateOf(0) } // 0-5
     var isCountingDown by remember { mutableStateOf(false) }
     var isRecordingActive by remember { mutableStateOf(false) }
@@ -181,9 +183,7 @@ fun PoseClientScreen() {
         MqttClientManager.onGlobalModelResetCommand = {
             globalModelLastSyncTime = ""
             globalAccuracyResult = null
-            if (ModelManager.activeModelForInference == ModelManager.ActiveModel.GLOBAL) {
-                predictedPose = "Unknown"
-            }
+            globalPredictedPose = "Unknown"
         }
         MqttClientManager.onResetCommand = {
             trainingDataset.clear()
@@ -192,7 +192,8 @@ fun PoseClientScreen() {
             DatasetPersister.clearTrainingDataset(context)
             localAccuracyResult = null
             globalAccuracyResult = null
-            predictedPose = "Unknown"
+            localPredictedPose = "Unknown"
+            globalPredictedPose = "Unknown"
             globalModelLastSyncTime = ""
             isCountingDown = false
             isRecordingActive = false
@@ -308,10 +309,17 @@ fun PoseClientScreen() {
                     }
                 }
                 AppScreenMode.INFERENCE -> {
-                    val predictionIdx = ModelManager.predict(features)
-                    val newPose = poseNames.getOrElse(predictionIdx) { "Unknown" }
-                    predictedPose = newPose
-                    MqttClientManager.publishTelemetry(newPose)
+                    val localPredIdx = ModelManager.localModel.predict(features)
+                    val globalPredIdx = ModelManager.federatedModel.predict(features)
+
+                    val localPose = poseNames.getOrElse(localPredIdx) { "Unknown" }
+                    val globalPose = poseNames.getOrElse(globalPredIdx) { "Unknown" }
+
+                    localPredictedPose = localPose
+                    globalPredictedPose = globalPose
+
+                    val telemetryPose = if (ModelManager.activeModelForInference == ModelManager.ActiveModel.LOCAL) localPose else globalPose
+                    MqttClientManager.publishTelemetry(telemetryPose)
                 }
             }
         }
@@ -385,7 +393,7 @@ fun PoseClientScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    Text("Active Model: ", style = MaterialTheme.typography.titleMedium)
+                    Text("Telemetry Stream: ", style = MaterialTheme.typography.titleMedium)
                     FilterChip(
                         selected = ModelManager.activeModelForInference == ModelManager.ActiveModel.LOCAL,
                         onClick = { ModelManager.setActiveModel(ModelManager.ActiveModel.LOCAL) },
@@ -400,7 +408,7 @@ fun PoseClientScreen() {
                 }
 
                 if (globalModelLastSyncTime.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "Global Model Synced at: $globalModelLastSyncTime",
                         style = MaterialTheme.typography.bodySmall,
@@ -408,18 +416,76 @@ fun PoseClientScreen() {
                     )
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Live Model Predictions", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("LOCAL MODEL", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                localPredictedPose,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.tertiary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Card(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(4.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("GLOBAL MODEL", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                globalPredictedPose,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
-                
-                Text("Predicted Pose", style = MaterialTheme.typography.labelLarge)
-                Text(predictedPose, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary)
-                
-                Spacer(modifier = Modifier.height(32.dp))
                 OutlinedButton(
                     onClick = {
                         trainingDataset.clear()
                         DatasetPersister.clearTrainingDataset(context)
                         ModelManager.resetAll()
-                        predictedPose = "Unknown"
+                        localPredictedPose = "Unknown"
+                        globalPredictedPose = "Unknown"
                     }
                 ) {
                     Text("Reset Model Weights & Training Data")
