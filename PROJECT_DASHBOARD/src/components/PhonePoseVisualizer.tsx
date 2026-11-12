@@ -62,8 +62,8 @@ function PhoneSpatialGraphic({ poseName }: { poseName: string }) {
   // Visual orientation transform
   let containerTransform = 'rotate(0deg)';
   if (isPortraitDown) containerTransform = 'rotate(180deg)';
-  else if (isLandscapeLeft) containerTransform = 'rotate(-90deg)';
-  else if (isLandscapeRight) containerTransform = 'rotate(90deg)';
+  else if (isLandscapeLeft) containerTransform = 'rotate(90deg)';
+  else if (isLandscapeRight) containerTransform = 'rotate(-90deg)';
   else if (isScreenUp) containerTransform = 'perspective(500px) rotateX(48deg)';
   else if (isScreenDown) containerTransform = 'perspective(500px) rotateX(48deg)';
 

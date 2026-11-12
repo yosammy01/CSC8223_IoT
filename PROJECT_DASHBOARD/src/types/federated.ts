@@ -180,20 +180,20 @@ export const POSE_DEFINITIONS: PoseDefinition[] = [
     name: 'Landscape Left',
     shortName: 'Landscape Left',
     definition:
-      'The top of the phone points to the left, and the right edge points upward.',
+      'The top of the phone points to the right, and the left edge points upward.',
     primaryClient: 'CLIENT_B',
-    gravityHint: 'g_x ≈ +9.8 m/s² ( +1.0g )',
-    rotationStyle: 'rotateX(0deg) rotateZ(-90deg)',
+    gravityHint: 'g_x ≈ -9.8 m/s² ( -1.0g )',
+    rotationStyle: 'rotateX(0deg) rotateZ(90deg)',
   },
   {
     index: 5,
     name: 'Landscape Right',
     shortName: 'Landscape Right',
     definition:
-      'The top of the phone points to the right, and the left edge points upward.',
+      'The top of the phone points to the left, and the right edge points upward.',
     primaryClient: 'CLIENT_B',
-    gravityHint: 'g_x ≈ -9.8 m/s² ( -1.0g )',
-    rotationStyle: 'rotateX(0deg) rotateZ(90deg)',
+    gravityHint: 'g_x ≈ +9.8 m/s² ( +1.0g )',
+    rotationStyle: 'rotateX(0deg) rotateZ(-90deg)',
   },
 ];
 

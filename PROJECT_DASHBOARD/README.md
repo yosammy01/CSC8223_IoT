@@ -55,8 +55,8 @@ Neither client sees the complete 6-pose classification problem during local trai
 | `1` | **Screen Down** | Phone lies flat with the screen facing downward. | $g_z \approx -9.8\text{ m/s}^2$ | **50 samples** | 0 *(unseen)* | 10 samples / phone |
 | `2` | **Portrait Up** | Phone is vertical with the top edge pointing upward. | $g_y \approx +9.8\text{ m/s}^2$ | **50 samples** | 0 *(unseen)* | 10 samples / phone |
 | `3` | **Portrait Down** | Phone is vertical with the top edge pointing downward. | $g_y \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
-| `4` | **Landscape Left** | The top of the phone points to the left, and the right edge points upward. | $g_x \approx +9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
-| `5` | **Landscape Right** | The top of the phone points to the right, and the left edge points upward. | $g_x \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
+| `4` | **Landscape Left** | The top of the phone points to the right, and the left edge points upward. | $g_x \approx -9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
+| `5` | **Landscape Right** | The top of the phone points to the left, and the right edge points upward. | $g_x \approx +9.8\text{ m/s}^2$ | 0 *(unseen)* | **50 samples** | 10 samples / phone |
 
 ---
 
