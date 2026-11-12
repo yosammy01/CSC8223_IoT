@@ -154,7 +154,7 @@ fun PoseClientScreen() {
 
     val poseNames = listOf(
         "Screen Up", "Screen Down", "Portrait Up", 
-        "Portrait Down", "Landscape Left", "Landscape Right"
+        "Portrait Down", "Landscape Right", "Landscape Left"
     )
 
     var globalModelLastSyncTime by remember { mutableStateOf("") }
