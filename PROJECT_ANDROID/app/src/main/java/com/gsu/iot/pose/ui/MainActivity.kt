@@ -160,6 +160,7 @@ fun PoseClientScreen() {
     )
 
     var globalModelLastSyncTime by remember { mutableStateOf("") }
+    var isGlobalInferenceActive by remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         // Load the datasets from local persistent storage on startup
@@ -179,11 +180,14 @@ fun PoseClientScreen() {
         MqttClientManager.onGlobalModelReloaded = {
             val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
             globalModelLastSyncTime = formatter.format(Date())
+            isGlobalInferenceActive = false // Pause global inference when new model arrives
+            globalPredictedPose = "NEW MODEL (PAUSED)"
         }
         MqttClientManager.onGlobalModelResetCommand = {
             globalModelLastSyncTime = ""
             globalAccuracyResult = null
             globalPredictedPose = "Unknown"
+            isGlobalInferenceActive = true
         }
         MqttClientManager.onResetCommand = {
             trainingDataset.clear()
@@ -310,15 +314,14 @@ fun PoseClientScreen() {
                 }
                 AppScreenMode.INFERENCE -> {
                     val localPredIdx = ModelManager.localModel.predict(features)
-                    val globalPredIdx = ModelManager.federatedModel.predict(features)
+                    localPredictedPose = poseNames.getOrElse(localPredIdx) { "Unknown" }
 
-                    val localPose = poseNames.getOrElse(localPredIdx) { "Unknown" }
-                    val globalPose = poseNames.getOrElse(globalPredIdx) { "Unknown" }
+                    if (isGlobalInferenceActive) {
+                        val globalPredIdx = ModelManager.federatedModel.predict(features)
+                        globalPredictedPose = poseNames.getOrElse(globalPredIdx) { "Unknown" }
+                    }
 
-                    localPredictedPose = localPose
-                    globalPredictedPose = globalPose
-
-                    val telemetryPose = if (ModelManager.activeModelForInference == ModelManager.ActiveModel.LOCAL) localPose else globalPose
+                    val telemetryPose = if (ModelManager.activeModelForInference == ModelManager.ActiveModel.LOCAL) localPredictedPose else globalPredictedPose
                     MqttClientManager.publishTelemetry(telemetryPose)
                 }
             }
@@ -411,8 +414,9 @@ fun PoseClientScreen() {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "Global Model Synced at: $globalModelLastSyncTime",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                 }
 
@@ -445,7 +449,7 @@ fun PoseClientScreen() {
                                 localPredictedPose,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.tertiary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
                         }
@@ -471,11 +475,26 @@ fun PoseClientScreen() {
                                 globalPredictedPose,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { 
+                        isGlobalInferenceActive = !isGlobalInferenceActive 
+                        if (isGlobalInferenceActive) {
+                            globalPredictedPose = "Starting..."
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isGlobalInferenceActive) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(if (isGlobalInferenceActive) "Pause Global Inference" else "Start Global Inference")
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
