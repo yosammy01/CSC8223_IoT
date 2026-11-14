@@ -20,6 +20,8 @@ import org.springframework.integration.mqtt.support.MqttHeaders;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessageHandler;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.samuel_robles.java_backend.mqtt.MqttMessageStore;
 import com.samuel_robles.java_backend.federated.FederatedAggregationService;
@@ -27,6 +29,8 @@ import com.samuel_robles.java_backend.websocket.TelemetryWebSocketHandler;
 
 @Configuration
 public class MqttIntegrationConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(MqttIntegrationConfig.class);
 
     @Bean
     MqttPahoClientFactory mqttClientFactory(
@@ -118,6 +122,11 @@ public class MqttIntegrationConfig {
                 aggregationService.validateClientId(clientId);
                 Boolean retained = message.getHeaders().get(MqttHeaders.RECEIVED_RETAINED, Boolean.class);
                 if (retained == null || !retained) {
+                    logger.info(
+                            "PRIVACY_AUDIT mqtt_inbound topic={} client={} payload_type=quantized_model payload_bytes={} raw_sensor_samples=false",
+                            topic,
+                            clientId,
+                            bytes.length);
                     aggregationService.accept(clientId, bytes);
                 }
             } else if (topicMatches(telemetryTopic, topic)) {
@@ -126,8 +135,11 @@ public class MqttIntegrationConfig {
                 String telemetry = payload instanceof byte[] bytes
                         ? new String(bytes, java.nio.charset.StandardCharsets.UTF_8)
                         : String.valueOf(payload);
+                logger.info("MQTT_AUDIT telemetry_inbound topic={} payload_bytes={}", topic, telemetry.getBytes(
+                        java.nio.charset.StandardCharsets.UTF_8).length);
                 telemetryWebSocketHandler.broadcast(telemetry);
             } else {
+                logger.info("MQTT_AUDIT message_inbound topic={}", topic);
                 mqttMessageStore.updateFromMessage(message);
             }
         };

@@ -45,7 +45,7 @@ object DatasetPersister {
                 mapToSave[key] = ArrayList(value)
             }
             ObjectOutputStream(FileOutputStream(file)).use { it.writeObject(mapToSave) }
-            Log.d(TAG, "Saved $fileName with ${mapToSave.size} poses")
+            Log.i(TAG, "PERSISTENCE -> Saved $fileName with ${mapToSave.size} poses to internal disk")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save $fileName", e)
         }
@@ -67,7 +67,7 @@ object DatasetPersister {
                         resultMap[key] = validFeatures.toMutableList()
                     }
                 }
-                Log.d(TAG, "Loaded $fileName with ${resultMap.size} valid poses")
+                Log.i(TAG, "PERSISTENCE -> Loaded $fileName with ${resultMap.size} valid poses from disk")
                 resultMap
             }
         } catch (e: Exception) {
@@ -81,7 +81,7 @@ object DatasetPersister {
             val file = File(context.filesDir, fileName)
             if (file.exists()) {
                 file.delete()
-                Log.d(TAG, "Cleared local $fileName file")
+                Log.i(TAG, "PERSISTENCE -> Cleared local $fileName file")
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to clear $fileName", e)

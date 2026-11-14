@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.util.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tools.jackson.databind.JsonNode;
 
 import com.samuel_robles.java_backend.federated.FederatedAggregationService;
@@ -25,6 +27,8 @@ import com.samuel_robles.java_backend.mqtt.MqttPublisher;
 @RestController
 @RequestMapping("/api/mqtt")
 public class MqttController {
+
+    private static final Logger logger = LoggerFactory.getLogger(MqttController.class);
 
     private final MqttPublisher mqttPublisher;
     private final MqttMessageStore mqttMessageStore;
@@ -67,6 +71,7 @@ public class MqttController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A JSON command is required.");
         }
         mqttPublisher.publish(command.toString(), commandsTopic, 1, false);
+        logger.info("REST_AUDIT federated_command_queued topic={} command={}", commandsTopic, command.get("command").asText());
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -79,6 +84,7 @@ public class MqttController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public PublishResponse resetFederatedStatus() {
         federatedAggregationService.resetAggregationStatus();
+        logger.info("REST_AUDIT federated_status_reset");
         return new PublishResponse("reset", Instant.now());
     }
 
@@ -107,6 +113,7 @@ public class MqttController {
                 commandsTopic,
                 1,
                 false);
+        logger.info("REST_AUDIT model_selection_queued active_model={} topic={}", request.activeModel(), commandsTopic);
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -124,6 +131,7 @@ public class MqttController {
                 commandsTopic,
                 1,
                 false);
+        logger.info("REST_AUDIT training_queued quantized={} topic={}", request.useQuantization(), commandsTopic);
         return new PublishResponse("queued", Instant.now());
     }
 

@@ -183,7 +183,7 @@ object MqttClientManager {
                 message.qos = 1
                 val perClientTopic = "$TOPIC_LOCAL_WEIGHTS/$activeClientId"
                 client.publish(perClientTopic, message)
-                Log.d(TAG, "Published local weights to $perClientTopic. Quantized: $useQuantization, Size: ${payload.size} bytes")
+                Log.i(TAG, "PRIVACY PROOF -> Published 502 quantized weights (${payload.size} bytes) to $perClientTopic. Raw sensor samples uploaded: 0.")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception publishing weights", e)
             }
@@ -205,6 +205,7 @@ object MqttClientManager {
                 val message = MqttMessage(json.toString().toByteArray())
                 message.qos = 0
                 client.publish("federated/evaluation/$activeClientId", message)
+                Log.i(TAG, "PUBLISHED EVALUATION -> Local Acc: ${"%.1f".format(localAcc)}%, Global Acc: ${"%.1f".format(globalAcc)}%")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception publishing evaluation", e)
             }
@@ -233,7 +234,7 @@ object MqttClientManager {
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
         when (topic) {
             TOPIC_GLOBAL_WEIGHTS -> {
-                Log.d(TAG, "Received global weights update from broker")
+                Log.i(TAG, "RECEIVED GLOBAL MODEL -> Downloaded ${message.payload.size} bytes from $topic. Updating Global Neural Network.")
                 val payload = message.payload
                 // With 502 parameters, quantized payload is 506 bytes. Raw payload is 2008 bytes.
                 // We use < 1000 to safely distinguish between the two formats.

@@ -12,11 +12,15 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.samuel_robles.java_backend.mqtt.MqttPublisher;
 
 @Service
 public class FederatedAggregationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(FederatedAggregationService.class);
 
     private final MqttPublisher mqttPublisher;
     private final int expectedClients;
@@ -91,6 +95,13 @@ public class FederatedAggregationService {
         receivedUpdates.incrementAndGet();
         latestClientWeights.put(clientId, update);
         pendingUpdates.put(clientId, update);
+        logger.info(
+                "FEDAVG_AUDIT update_accepted client={} weight_count={} received_updates={} pending_clients={}/{}",
+                clientId,
+                update.length,
+                receivedUpdates.get(),
+                latestClientWeights.size(),
+                expectedClients);
         if (latestClientWeights.size() < expectedClients) {
             return;
         }
@@ -114,6 +125,12 @@ public class FederatedAggregationService {
         snapshotRepository.save(new FederatedModelSnapshot(
                 "GLOBAL", "GLOBAL", null, QuantizedWeightsCodec.encode(aggregate), lastAggregationAt));
         completedRounds.incrementAndGet();
+        logger.info(
+                "FEDAVG_AUDIT aggregation_complete round={} clients={} weight_count={} output_payload_bytes={} persisted=true",
+                completedRounds.get(),
+                updateCount,
+                aggregate.length,
+                QuantizedWeightsCodec.encode(aggregate).length);
         mqttPublisher.publish(
                 QuantizedWeightsCodec.encode(aggregate),
                 globalWeightsTopic,
