@@ -34,24 +34,37 @@ object FeatureExtractor {
     // A callback to receive extracted features. E.g., invoked by the UI or the training loop.
     var onFeaturesExtracted: ((FloatArray) -> Unit)? = null
 
+    /**
+     * Appends a raw Gravity sample (x, y, z) to the sliding window and checks if the window duration has elapsed.
+     */
     @Synchronized
     fun addGravitySample(x: Float, y: Float, z: Float, timestampNs: Long) {
         gravityWindow.add(SensorSample(x, y, z, timestampNs))
         checkWindowAndExtract(timestampNs)
     }
 
+    /**
+     * Appends a raw Accelerometer sample (x, y, z) to the sliding window and checks if the window duration has elapsed.
+     */
     @Synchronized
     fun addAccelSample(x: Float, y: Float, z: Float, timestampNs: Long) {
         accelWindow.add(SensorSample(x, y, z, timestampNs))
         checkWindowAndExtract(timestampNs)
     }
 
+    /**
+     * Appends a raw Gyroscope sample (x, y, z) to the sliding window and checks if the window duration has elapsed.
+     */
     @Synchronized
     fun addGyroSample(x: Float, y: Float, z: Float, timestampNs: Long) {
         gyroWindow.add(SensorSample(x, y, z, timestampNs))
         checkWindowAndExtract(timestampNs)
     }
 
+    /**
+     * Verifies if the time difference between the oldest sample in any sensor buffer
+     * and the latest incoming timestamp exceeds 100 milliseconds.
+     */
     private fun checkWindowAndExtract(latestTimestampNs: Long) {
         val oldestGrav = gravityWindow.firstOrNull()?.timestampNs ?: Long.MAX_VALUE
         val oldestAccel = accelWindow.firstOrNull()?.timestampNs ?: Long.MAX_VALUE
@@ -67,6 +80,10 @@ object FeatureExtractor {
         }
     }
 
+    /**
+     * Computes 8 statistical features (Mean X/Y/Z, StdDev X/Y/Z, Mean Mag, StdDev Mag)
+     * normalized by the specified sensor normalization factor.
+     */
     private fun computeStats(window: List<SensorSample>, normFactor: Float): FloatArray {
         if (window.isEmpty()) return FloatArray(8) { 0f }
 
@@ -99,6 +116,10 @@ object FeatureExtractor {
         )
     }
 
+    /**
+     * Extracts the complete 24-feature array (8 Gravity, 8 Accel, 8 Gyro), invokes the [onFeaturesExtracted]
+     * callback, and immediately flushes raw sample buffers from memory.
+     */
     private fun extractFeaturesAndClear() {
         // Output 24 features total: 8 Gravity, 8 Accel, 8 Gyro
         val features = FloatArray(24)

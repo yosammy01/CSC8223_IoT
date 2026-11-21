@@ -116,6 +116,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Plays an audio beep using Android's hardware [ToneGenerator].
+ * Used for 3-2-1 countdown ticks and data collection completion audio cues.
+ * @param toneType The tone frequency/pattern constant from [ToneGenerator].
+ * @param durationMs Duration of the tone in milliseconds.
+ */
 fun playBeepSound(toneType: Int = ToneGenerator.TONE_PROP_BEEP, durationMs: Int = 150) {
     try {
         val toneGen = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
@@ -128,10 +134,21 @@ fun playBeepSound(toneType: Int = ToneGenerator.TONE_PROP_BEEP, durationMs: Int 
     }
 }
 
+/**
+ * Top-level application UI navigation screen modes.
+ */
 enum class AppScreenMode {
-    INFERENCE, TRAINING, CALIBRATION_EVAL
+    /** Live pose inference and dual-model prediction view. */
+    INFERENCE,
+    /** Non-IID local training dataset collection mode (50 samples/pose). */
+    TRAINING,
+    /** Universal evaluation & calibration dataset collection mode (10 samples/pose). */
+    CALIBRATION_EVAL
 }
 
+/**
+ * Root Composable function rendering the complete Federated Pose Client UI dashboard.
+ */
 @Composable
 fun PoseClientScreen() {
     var screenMode by remember { mutableStateOf(AppScreenMode.INFERENCE) }
@@ -220,7 +237,9 @@ fun PoseClientScreen() {
     val currentTrainingPoseSamples = trainingDataset[activeTargetPose]?.size ?: 0
     val currentEvalPoseSamples = evalDataset[activeTargetPose]?.size ?: 0
 
-    // Helper function to retrain local model on all stored training samples
+    /**
+     * Resets local model weights and retrains over all stored samples in [trainingDataset] across 20 SGD epochs.
+     */
     fun retrainFromDataset() {
         ModelManager.localModel.reset()
         if (trainingDataset.isNotEmpty()) {
@@ -228,7 +247,10 @@ fun PoseClientScreen() {
         }
     }
 
-    // Evaluate accuracy over calibration dataset
+    /**
+     * Runs accuracy evaluation for both [ModelManager.localModel] and [ModelManager.federatedModel]
+     * over the stored [evalDataset] and publishes benchmark results to the server.
+     */
     fun runEvaluation() {
         var localCorrect = 0
         var globalCorrect = 0

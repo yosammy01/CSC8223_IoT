@@ -41,6 +41,10 @@ class SensorService : Service(), SensorEventListener {
         const val TAG = "SensorService"
     }
 
+    /**
+     * Initializes the Notification Channel and obtains system handles for the hardware
+     * Gravity, Accelerometer, and Gyroscope sensors.
+     */
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
@@ -51,6 +55,10 @@ class SensorService : Service(), SensorEventListener {
         gyroscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     }
 
+    /**
+     * Starts the service in the Foreground with a ongoing persistent notification
+     * and registers sensor event listeners at [SensorManager.SENSOR_DELAY_FASTEST].
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Federated Pose Client")
@@ -74,15 +82,24 @@ class SensorService : Service(), SensorEventListener {
         return START_STICKY
     }
 
+    /**
+     * Unregisters sensor listeners when the service is destroyed to prevent battery leak.
+     */
     override fun onDestroy() {
         super.onDestroy()
         sensorManager.unregisterListener(this)
     }
 
+    /**
+     * Unused since this is a started Foreground Service rather than a bound service.
+     */
     override fun onBind(intent: Intent?): IBinder? {
-        return null // We don't need to bind to this service
+        return null
     }
 
+    /**
+     * Receives raw hardware [SensorEvent] readings and forwards them immediately to [FeatureExtractor].
+     */
     override fun onSensorChanged(event: SensorEvent?) {
         if (event == null) return
 
@@ -103,6 +120,9 @@ class SensorService : Service(), SensorEventListener {
         // Not used
     }
 
+    /**
+     * Creates the Android O (API 26+) Notification Channel required for Foreground Services.
+     */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val serviceChannel = NotificationChannel(

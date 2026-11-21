@@ -27,30 +27,53 @@ object DatasetPersister {
     private const val TRAIN_FILE_NAME = "train_dataset.dat"
     private const val TAG = "DatasetPersister"
 
+    /**
+     * Persists the evaluation/calibration dataset (10 samples per pose) to `eval_dataset.dat`.
+     */
     fun saveEvalDataset(context: Context, dataset: Map<Int, List<FloatArray>>) {
         saveDataset(context, dataset, EVAL_FILE_NAME)
     }
 
+    /**
+     * Restores the evaluation/calibration dataset from internal disk storage.
+     * @return Map of pose label to list of 24-feature samples.
+     */
     fun loadEvalDataset(context: Context): Map<Int, MutableList<FloatArray>> {
         return loadDataset(context, EVAL_FILE_NAME)
     }
 
+    /**
+     * Deletes the local `eval_dataset.dat` file from disk.
+     */
     fun clearEvalDataset(context: Context) {
         clearDataset(context, EVAL_FILE_NAME)
     }
 
+    /**
+     * Persists the local training dataset (50 samples per pose) to `train_dataset.dat`.
+     */
     fun saveTrainingDataset(context: Context, dataset: Map<Int, List<FloatArray>>) {
         saveDataset(context, dataset, TRAIN_FILE_NAME)
     }
 
+    /**
+     * Restores the training dataset from internal disk storage.
+     * @return Map of pose label to list of 24-feature samples.
+     */
     fun loadTrainingDataset(context: Context): Map<Int, MutableList<FloatArray>> {
         return loadDataset(context, TRAIN_FILE_NAME)
     }
 
+    /**
+     * Deletes the local `train_dataset.dat` file from disk.
+     */
     fun clearTrainingDataset(context: Context) {
         clearDataset(context, TRAIN_FILE_NAME)
     }
 
+    /**
+     * Serializes a dataset map to internal private app storage using [ObjectOutputStream].
+     */
     private fun saveDataset(context: Context, dataset: Map<Int, List<FloatArray>>, fileName: String) {
         try {
             val file = File(context.filesDir, fileName)
@@ -65,6 +88,9 @@ object DatasetPersister {
         }
     }
 
+    /**
+     * Deserializes a dataset map from internal storage, filtering out legacy vector formats.
+     */
     private fun loadDataset(context: Context, fileName: String): Map<Int, MutableList<FloatArray>> {
         val file = File(context.filesDir, fileName)
         if (!file.exists()) return emptyMap()
@@ -90,6 +116,9 @@ object DatasetPersister {
         }
     }
 
+    /**
+     * Deletes a specified dataset file if it exists on disk.
+     */
     private fun clearDataset(context: Context, fileName: String) {
         try {
             val file = File(context.filesDir, fileName)

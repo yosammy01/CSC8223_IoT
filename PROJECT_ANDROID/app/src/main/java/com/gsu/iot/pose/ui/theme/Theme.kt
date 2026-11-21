@@ -18,6 +18,14 @@ import androidx.core.view.WindowCompat
 private val DarkColorScheme = darkColorScheme()
 private val LightColorScheme = lightColorScheme()
 
+/**
+ * Root Material 3 application theme wrapper for the Federated Pose Client.
+ * Supports Android 12+ (API 31+) Dynamic Color (Material You) and adjusts system bar appearance.
+ *
+ * @param darkTheme Whether the system is currently in Dark Mode.
+ * @param dynamicColor Whether to enable wallpaper-extracted dynamic colors on supported devices.
+ * @param content The Composable UI subtree to apply the theme to.
+ */
 @Composable
 fun FederatedPoseClientTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

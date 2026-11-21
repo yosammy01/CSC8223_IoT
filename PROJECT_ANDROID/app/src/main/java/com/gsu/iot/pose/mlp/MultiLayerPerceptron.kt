@@ -32,6 +32,9 @@ class MultiLayerPerceptron(
     var b1 = FloatArray(hiddenSize) { Random.nextFloat() * 2f - 1f }
     var b2 = FloatArray(outputSize) { Random.nextFloat() * 2f - 1f }
 
+    /**
+     * Resets all 502 weights and biases to random uniform floats in the range [-1.0, 1.0].
+     */
     fun reset() {
         w1 = FloatArray(inputSize * hiddenSize) { Random.nextFloat() * 2f - 1f }
         w2 = FloatArray(hiddenSize * outputSize) { Random.nextFloat() * 2f - 1f }
@@ -39,14 +42,28 @@ class MultiLayerPerceptron(
         b2 = FloatArray(outputSize) { Random.nextFloat() * 2f - 1f }
     }
 
-    // Activation: Sigmoid for hidden, Softmax for output
+    /**
+     * Sigmoid activation function for hidden layer neurons: 1 / (1 + e^-x).
+     */
     private fun sigmoid(x: Float): Float = (1.0 / (1.0 + exp(-x.toDouble()))).toFloat()
+
+    /**
+     * Derivative of Sigmoid activation given x = sigmoid(z): x * (1 - x).
+     */
     private fun sigmoidDerivative(x: Float): Float = x * (1 - x)
 
     // Forward pass state
     private var hidden = FloatArray(hiddenSize)
     private var output = FloatArray(outputSize)
 
+    /**
+     * Performs a complete forward pass through the neural network.
+     * 1. Input to Hidden layer (Sigmoid activation).
+     * 2. Hidden to Output layer.
+     * 3. Softmax activation for output probabilities.
+     * @param input A 24-element normalized feature vector.
+     * @return A 6-element FloatArray containing class probabilities summing to 1.0.
+     */
     fun forward(input: FloatArray): FloatArray {
         // Input to Hidden
         for (j in 0 until hiddenSize) {
@@ -66,7 +83,7 @@ class MultiLayerPerceptron(
             output[j] = sum
         }
         
-        // Softmax
+        // Softmax (with max subtraction for numerical stability)
         var maxOutput = output[0]
         for (j in 1 until outputSize) {
             if (output[j] > maxOutput) maxOutput = output[j]
@@ -85,6 +102,12 @@ class MultiLayerPerceptron(
         return output
     }
 
+    /**
+     * Trains the network on a single input vector using Stochastic Gradient Descent (SGD)
+     * and Cross-Entropy loss with Softmax activation.
+     * @param input A 24-element feature vector.
+     * @param targetClass The ground-truth pose class index (0..5).
+     */
     fun train(input: FloatArray, targetClass: Int) {
         forward(input)
 
@@ -121,6 +144,11 @@ class MultiLayerPerceptron(
         }
     }
 
+    /**
+     * Batch-trains the model over the entire dataset for a given number of epochs.
+     * @param dataset A map of pose class labels to lists of feature vectors.
+     * @param epochs Number of complete passes over the dataset (default 15).
+     */
     fun trainEpochs(dataset: Map<Int, List<FloatArray>>, epochs: Int = 15) {
         for (e in 0 until epochs) {
             dataset.forEach { (targetLabel, samples) ->
@@ -131,7 +159,10 @@ class MultiLayerPerceptron(
         }
     }
     
-    // Total weights size = (24*16) + (16*6) + 16 + 6 = 384 + 96 + 22 = 502 floats.
+    /**
+     * Packs all 502 network parameters (w1, b1, w2, b2) into a single 1D FloatArray
+     * for serialization and MQTT transmission to the Federated Server.
+     */
     fun getWeights(): FloatArray {
         val totalWeights = w1.size + w2.size + b1.size + b2.size
         val allWeights = FloatArray(totalWeights)
@@ -146,6 +177,11 @@ class MultiLayerPerceptron(
         return allWeights
     }
     
+    /**
+     * Unpacks and sets all 502 network parameters from a 1D FloatArray received
+     * from the Federated Server after aggregation.
+     * @throws IllegalArgumentException If array size does not equal 502 parameters.
+     */
     fun setWeights(allWeights: FloatArray) {
         val expectedSize = w1.size + b1.size + w2.size + b2.size
         if (allWeights.size != expectedSize) {
@@ -161,6 +197,11 @@ class MultiLayerPerceptron(
         allWeights.copyInto(b2, 0, offset, offset + b2.size)
     }
     
+    /**
+     * Runs forward prediction and returns the class index with the highest probability (argmax).
+     * @param input A 24-element feature vector.
+     * @return Class index (0..5) corresponding to the predicted pose.
+     */
     fun predict(input: FloatArray): Int {
         val probs = forward(input)
         var maxIdx = 0

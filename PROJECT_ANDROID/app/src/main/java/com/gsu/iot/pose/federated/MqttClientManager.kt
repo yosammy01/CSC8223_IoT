@@ -58,6 +58,11 @@ object MqttClientManager {
     var isConnected by mutableStateOf(false)
         private set
 
+    /**
+     * Initializes the MQTT client with a unique device ID and restores saved server IP address.
+     * @param context Application context.
+     * @param clientIdSuffix Device identifier suffix derived from Android ID.
+     */
     fun initialize(context: Context, clientIdSuffix: String = "A") {
         try {
             activeClientIdSuffix = clientIdSuffix
@@ -98,6 +103,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Updates the target MQTT Broker IP address, persists it to SharedPreferences, and reconnects.
+     */
     fun updateServerIp(context: Context, newIp: String) {
         val cleanIp = newIp.trim()
         serverIp = cleanIp
@@ -110,6 +118,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Initiates asynchronous TCP connection to the Mosquitto MQTT Broker on port 1883.
+     */
     fun connect() {
         val client = mqttClient
         if (client != null && !client.isConnected && serverIp.isNotBlank()) {
@@ -145,6 +156,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Cleanly disconnects the MQTT client from the broker.
+     */
     fun disconnect() {
         val client = mqttClient ?: return
         if (client.isConnected) {
@@ -158,6 +172,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Subscribes to global weight updates and server control commands.
+     */
     private fun subscribeToTopics() {
         val client = mqttClient ?: return
         try {
@@ -170,6 +187,10 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Publishes 502 neural network model parameters to `federated/local/weights/{clientId}`.
+     * Uses 8-bit quantization by default (compressing 2008 bytes down to ~506 bytes).
+     */
     fun publishLocalWeights(weights: FloatArray) {
         val client = mqttClient
         if (client != null && client.isConnected) {
@@ -192,6 +213,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Publishes Local Model Accuracy vs Global Model Accuracy percentages to `federated/evaluation/{clientId}`.
+     */
     fun publishEvaluation(localAcc: Float, globalAcc: Float) {
         val client = mqttClient
         if (client != null && client.isConnected) {
@@ -212,6 +236,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Publishes real-time predicted pose telemetry to `federated/telemetry/{clientId}`.
+     */
     fun publishTelemetry(poseName: String) {
         val client = mqttClient
         if (client != null && client.isConnected) {
@@ -231,6 +258,9 @@ object MqttClientManager {
         }
     }
 
+    /**
+     * Routes incoming MQTT payloads from subscribed topics to appropriate handlers.
+     */
     private fun handleIncomingMessage(topic: String, message: MqttMessage) {
         when (topic) {
             TOPIC_GLOBAL_WEIGHTS -> {
