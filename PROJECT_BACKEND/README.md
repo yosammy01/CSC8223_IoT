@@ -19,14 +19,29 @@ variables documented below.
 
 ## Start the dependencies
 
-The included `compose.yaml` starts PostgreSQL:
+PostgreSQL and Mosquitto must be running separately. Spring Boot does not create
+or start either external service.
+
+PostgreSQL must be available and running, with the database and credentials
+configured by `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and
+`SPRING_DATASOURCE_PASSWORD`. The defaults connect to
+`jdbc:postgresql://localhost:5432/postgres` as user `postgres`.
+
+PostgreSQL may already run as a background service, so normally you only need
+to start the Spring Boot server. Spring Boot does not start PostgreSQL or create
+the PostgreSQL server. It uses Spring Data JPA and Hibernate to manage the
+application database: JPA maps the `FederatedModelSnapshot` entity to the
+`federated_model_snapshots` table, and `spring.jpa.hibernate.ddl-auto=update`
+creates or updates that table in the running PostgreSQL database.
+
+Start Mosquitto with network listener and anonymous access enabled:
 
 ```powershell
-docker compose up -d postgres
+mosquitto -c mqtt/mosquitto.conf -v
 ```
 
-Start Mosquitto separately if it is not already running. The backend does not
-start the MQTT broker.
+Run this command from the repository root. The backend does not start the MQTT
+broker.
 
 ## Build, test, and run
 

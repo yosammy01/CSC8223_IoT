@@ -5,7 +5,7 @@
 This repository implements an end-to-end, privacy-preserving **Federated Learning (FL)** system for **6-Pose Smartphone Spatial Orientation Classification** across three integrated projects:
 
 1. **[`PROJECT_ANDROID`](./PROJECT_ANDROID)** — **Edge Tier (Native Kotlin & Jetpack Compose Android App)**: Samples onboard MEMS sensors (Gravity, Accelerometer, Gyroscope), extracts 24 normalized features over a 100 ms sliding window, trains an on-device Multi-Layer Perceptron (`24 → 16 → 6`, 502 parameters), compresses model updates via 8-bit symmetric min-max quantization (506-byte payload), persists datasets to local disk, renders side-by-side dual predictions (LOCAL vs GLOBAL), and streams live pose telemetry over MQTT.
-2. **[`PROJECT_BACKEND`](./PROJECT_BACKEND)** — **Orchestration Tier (Java 21 Spring Boot + Eclipse Mosquitto MQTT + PostgreSQL)**: Ingests 8-bit quantized local weight updates over MQTT, de-quantizes and aggregates them using **Federated Averaging (FedAvg)**, persists model snapshots in PostgreSQL, broadcasts synchronized global weights back to the phones, and bridges live inference telemetry to WebSockets (`/ws/telemetry`).
+2. **[`PROJECT_BACKEND`](./PROJECT_BACKEND)** — **Orchestration Tier (Java 26 + Spring Boot + Eclipse Mosquitto MQTT + PostgreSQL)**: Ingests 8-bit quantized local weight updates over MQTT, de-quantizes and aggregates them using **Federated Averaging (FedAvg)**, persists the global model snapshot in PostgreSQL, broadcasts synchronized global weights back to the phones, and bridges live inference telemetry to WebSockets (`/ws/telemetry`).
 3. **[`PROJECT_DASHBOARD`](./PROJECT_DASHBOARD)** — **Visualization & Control Tier (React 19 + TypeScript + Vite + Tailwind CSS v4)**: Real-time operator dashboard that visualizes live 3D spatial phone poses, dispatches remote MQTT experiment & model-switching commands (`START_TRAINING`, `SET_MODEL`, `RESET_ALL`), tracks FedAvg rounds, compares all three required models via $6 \times 6$ confusion matrices and Macro-F1 scores, and evaluates the **74.59% MQTT payload reduction** achieved by 8-bit weight quantization.
 
 ---
@@ -120,11 +120,11 @@ Native Android application written in **Kotlin** with **Jetpack Compose** (`minS
 
 ### 2. `PROJECT_BACKEND` — Orchestration Tier (Spring Boot Server)
 
-Java 21 + **Spring Boot 4** server integrating **Spring Integration MQTT**, **Spring WebSockets**, and **Spring Data JPA (PostgreSQL)** to orchestrate Federated Averaging (`FedAvg`) and bridge live telemetry to the web dashboard.
+Java 26 + **Spring Boot 4** server integrating **Spring Integration MQTT**, **Spring WebSockets**, and **Spring Data JPA (PostgreSQL)** to orchestrate Federated Averaging (`FedAvg`) and bridge live telemetry to the web dashboard.
 
 - **Key Components**:
   - [`MqttIntegrationConfig.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/config/MqttIntegrationConfig.java): Configures inbound and outbound MQTT adapters connected to Eclipse Mosquitto (`tcp://localhost:1883`). Routes binary payloads on `federated/local/weights/#` to `FederatedAggregationService` and JSON payloads on `federated/telemetry/#` to `TelemetryWebSocketHandler`.
-  - [`FederatedAggregationService.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/federated/FederatedAggregationService.java): Buffers decoded client weight updates until `expectedClients` (`2`) have reported in the current round, computes the element-wise **FedAvg** mean across all 246 parameters, persists `GLOBAL` and per-client `LOCAL` snapshots to PostgreSQL, and publishes the re-quantized global model (`250 bytes`, retained) to `federated/global/weights`.
+  - [`FederatedAggregationService.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/federated/FederatedAggregationService.java): Buffers decoded client weight updates until `expectedClients` (`2`) have reported, computes the element-wise **FedAvg** mean across all 502 parameters, persists only the `GLOBAL` snapshot to PostgreSQL, and publishes the re-quantized global model (`506 bytes`, retained) to `federated/global/weights`. Local client updates remain in memory for the active round.
   - [`QuantizedWeightsCodec.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/federated/QuantizedWeightsCodec.java): Server-side codec matching Android's `Quantizer.kt` wire format (`decode(byte[])` $\rightarrow$ `float[]` and `encode(float[])` $\rightarrow$ `byte[]`).
   - [`TelemetryWebSocketHandler.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/websocket/TelemetryWebSocketHandler.java) & [`WebSocketConfig.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/config/WebSocketConfig.java): Broadcasts real-time pose telemetry to connected dashboard clients at `ws://localhost:8080/ws/telemetry`.
   - [`MqttController.java`](./PROJECT_BACKEND/src/main/java/com/samuel_robles/java_backend/controller/MqttController.java): Exposes REST endpoints under `/api/mqtt`:
@@ -132,7 +132,7 @@ Java 21 + **Spring Boot 4** server integrating **Spring Integration MQTT**, **Sp
     - `GET /api/mqtt/latest` — Latest MQTT message inspected by `MqttMessageStore`.
     - `POST /api/mqtt/federated/training` — Publishes `{"command":"START_TRAINING","use_quantization":true|false}` to `federated/commands`.
     - `POST /api/mqtt/federated/model/toggle` — Publishes `{"command":"SET_MODEL","active_model":"LOCAL"|"GLOBAL"}` to `federated/commands`.
-    - `POST /api/mqtt/federated/model/republish` & `/republish-all` — Republishes persisted global and/or local model weights from PostgreSQL to MQTT.
+    - `POST /api/mqtt/federated/model/republish` & `/republish-all` — Republishes the in-memory or persisted global model to MQTT.
     - `POST /api/mqtt/federated/command` — Dispatches custom control commands (`RESET_GLOBAL`, `RESET_ALL`, etc.).
 
 ---
@@ -168,12 +168,24 @@ To evaluate federated learning under an extreme **non-IID** data distribution, n
 ## Quick Start: Building & Running the Complete System
 
 ### 1. Start MQTT Broker & PostgreSQL + Spring Boot Backend (`PROJECT_BACKEND`)
-Ensure Eclipse Mosquitto (`tcp://localhost:1883`) and PostgreSQL (`localhost:5432/postgres`) are running, then start the Spring Boot server:
+
+Start Eclipse Mosquitto with network listener and anonymous access enabled:
+
+```powershell
+mosquitto -c mqtt/mosquitto.conf -v
+```
+
+A PostgreSQL instance must also be available and running. It may already run as a background service, so normally you only need to start Spring Boot. Spring Boot does **not** install or start PostgreSQL or create the PostgreSQL server. It connects to the running database using `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` (the local defaults are the `postgres` database on `localhost:5432` and user `postgres`).
+
+Spring Data JPA, with Hibernate, manages the application's database records and schema: it maps `FederatedModelSnapshot` to the `federated_model_snapshots` table, and `spring.jpa.hibernate.ddl-auto=update` creates or updates that table in PostgreSQL.
+
+In a new terminal, start the Spring Boot server:
 
 ```powershell
 cd PROJECT_BACKEND
 .\mvnw.cmd spring-boot:run
 ```
+
 The backend will listen on `http://localhost:8080` (REST API at `/api/mqtt/...` and WebSockets at `ws://localhost:8080/ws/telemetry`).
 
 ### 2. Start the React Operator Dashboard (`PROJECT_DASHBOARD`)
