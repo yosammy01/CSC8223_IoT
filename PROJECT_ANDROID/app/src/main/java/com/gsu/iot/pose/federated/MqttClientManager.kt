@@ -9,7 +9,7 @@
  * - Publishes local weights (federated/local/weights/{clientId}) for FedAvg aggregation.
  * - Subscribes to global weights (federated/global/weights) to receive updated models.
  * - Subscribes to backend commands (federated/commands) to intercept dashboard triggers
- *   like SET_MODEL, RESET_GLOBAL, and START_TRAINING (handling 8-bit vs 32-bit flags).
+ *   like SET_MODEL, RESET_GLOBAL, and START_TRAINING.
  * - Transmits live prediction telemetry and evaluation benchmark accuracy results.
  * ============================================================================
  */

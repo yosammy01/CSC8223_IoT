@@ -6,9 +6,11 @@
  * 
  * Functions:
  * - Manages the Compose UI with three tabs: Inference, Training, and Eval/Calib.
+ * - Displays live LOCAL MODEL and GLOBAL MODEL predictions side-by-side on Inference screen.
  * - Handles Android Permissions and launches the foreground `SensorService`.
  * - Intercepts extracted features from `FeatureExtractor` and routes them to 
- *   either training datasets, evaluation datasets, or live inference.
+ *   either training datasets, evaluation datasets, or live dual-inference.
+ * - Automatically reloads locally persisted datasets from disk on app startup.
  * - Triggers MQTT telemetry publishing and handles local UI state updates based
  *   on server commands (like START_TRAINING and Model resets).
  * ============================================================================

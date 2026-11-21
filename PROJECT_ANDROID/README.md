@@ -16,7 +16,7 @@ This Android application serves as the Edge Client for a complete Federated Lear
 ## Architecture Overview
 
 ### 1. The Sensor Pipeline (`SensorService.kt` & `FeatureExtractor.kt`)
-Android's `SensorManager` runs as a Foreground Service, ensuring it never sleeps. It collects Gravity/Accelerometer data and feeds it into a **100-millisecond sliding window**. The window extracts an 8-element feature array (Mean X/Y/Z, StdDev X/Y/Z, Mean Mag, StdDev Mag) normalized by 9.8.
+Android's `SensorManager` runs as a Foreground Service, ensuring it never sleeps. It collects Gravity, Accelerometer, and Gyroscope data simultaneously and feeds them into a **100-millisecond sliding window**. The window extracts a **24-element feature array** (8 normalized features per sensor: Mean X/Y/Z, StdDev X/Y/Z, Mean Mag, StdDev Mag).
 
 ### 2. The Machine Learning Model (`MultiLayerPerceptron.kt` & `ModelManager.kt`)
 A natively written Kotlin Neural Network consisting of 24 inputs (8 features per sensor: Gravity, Accelerometer, Gyroscope), 16 hidden neurons (Sigmoid), and 6 output neurons (Softmax). It contains exactly 502 float parameters. Multi-epoch Stochastic Gradient Descent (SGD) allows the model to converge rapidly on the mobile CPU.

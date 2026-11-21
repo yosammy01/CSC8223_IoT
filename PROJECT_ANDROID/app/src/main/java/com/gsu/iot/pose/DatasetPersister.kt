@@ -1,3 +1,17 @@
+/**
+ * ============================================================================
+ * README - DatasetPersister.kt
+ * ============================================================================
+ * Role: Local On-Device File Persistence for Training and Calibration Datasets.
+ * 
+ * Functions:
+ * - Serializes training datasets (50/50 samples) to `train_dataset.dat` in Context.filesDir.
+ * - Serializes calibration datasets (10/10 samples) to `eval_dataset.dat` in Context.filesDir.
+ * - Automatically reloads datasets on app startup so trained models and calibration 
+ *   benchmarks survive app reboots.
+ * - Provides methods to wipe local dataset files during master or pose-specific resets.
+ * ============================================================================
+ */
 package com.gsu.iot.pose
 
 import android.content.Context

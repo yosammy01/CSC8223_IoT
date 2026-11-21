@@ -5,8 +5,9 @@
  * Role: Processes raw sensor streams into normalized machine learning features.
  * 
  * Functions:
- * - Collects raw (X,Y,Z) sensor data into a 100-millisecond sliding window.
- * - Once the window hits 100ms, computes 8 statistical features:
+ * - Collects raw (X,Y,Z) sensor data from Gravity, Accelerometer, and Gyroscope 
+ *   into 100-millisecond sliding windows.
+ * - Once the window hits 100ms, computes 24 statistical features (8 per sensor):
  *   1-3. Mean of X, Y, Z
  *   4-6. Standard Deviation of X, Y, Z
  *   7. Mean of the Vector Magnitude

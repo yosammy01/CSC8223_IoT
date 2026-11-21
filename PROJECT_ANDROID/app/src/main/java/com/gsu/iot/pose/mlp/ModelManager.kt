@@ -8,8 +8,8 @@
  * - Holds two entirely separate instances of the MLP: `localModel` and `federatedModel`.
  * - Ensures `localModel` is only ever trained on the device's local sensor data.
  * - Ensures `federatedModel` is strictly updated via the server's aggregated weights.
- * - Routes the live inference `predict()` call to whichever model is currently 
- *   selected as `activeModelForInference` (LOCAL vs GLOBAL).
+ * - Provides predictions for both `localModel` and `federatedModel` simultaneously 
+ *   for real-time side-by-side UI rendering on the Inference tab.
  * ============================================================================
  */
 package com.gsu.iot.pose.mlp
