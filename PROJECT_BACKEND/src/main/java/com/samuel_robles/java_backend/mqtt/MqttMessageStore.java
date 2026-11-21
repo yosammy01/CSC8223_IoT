@@ -14,10 +14,13 @@ import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
 @Component
+/** Defines the MqttMessageStore component. */
 public class MqttMessageStore {
 
+    /** Stores the latest received MQTT message. */
     private final AtomicReference<ReceivedMqttMessage> latestMessage = new AtomicReference<>();
 
+    /** Performs the updateFromMessage operation. */
     public void updateFromMessage(Message<?> message) {
         Object rawPayload = message.getPayload();
         String payload = rawPayload instanceof byte[] bytes
@@ -35,10 +38,12 @@ public class MqttMessageStore {
                 Instant.now()));
     }
 
+    /** Performs the latestMessage operation. */
     public Optional<ReceivedMqttMessage> latestMessage() {
         return Optional.ofNullable(latestMessage.get());
     }
 
+    /** Defines the ReceivedMqttMessage component. */
     public record ReceivedMqttMessage(String topic, String payload, int qos, boolean retained, Instant receivedAt) {
     }
 }

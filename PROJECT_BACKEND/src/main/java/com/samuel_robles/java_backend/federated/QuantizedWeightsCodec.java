@@ -12,13 +12,18 @@ import java.nio.ByteOrder;
  */
 public final class QuantizedWeightsCodec {
 
+    /** Stores the EXPECTED_WEIGHT_COUNT value. */
     public static final int EXPECTED_WEIGHT_COUNT = 502;
+    /** Stores the QUANTIZED_PAYLOAD_SIZE value. */
     public static final int QUANTIZED_PAYLOAD_SIZE = Float.BYTES + EXPECTED_WEIGHT_COUNT;
+    /** Stores the RAW_PAYLOAD_SIZE value. */
     public static final int RAW_PAYLOAD_SIZE = EXPECTED_WEIGHT_COUNT * Float.BYTES;
 
+    /** Performs the QuantizedWeightsCodec operation. */
     private QuantizedWeightsCodec() {
     }
 
+    /** Performs the decode operation. */
     public static float[] decode(byte[] payload) {
         if (payload == null) {
             throw new IllegalArgumentException("A model payload is required.");
@@ -46,6 +51,7 @@ public final class QuantizedWeightsCodec {
         return weights;
     }
 
+    /** Performs the decodeRaw operation. */
     private static float[] decodeRaw(byte[] payload) {
         ByteBuffer buffer = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN);
         float[] weights = new float[EXPECTED_WEIGHT_COUNT];
@@ -58,6 +64,7 @@ public final class QuantizedWeightsCodec {
         return weights;
     }
 
+    /** Performs the encode operation. */
     public static byte[] encode(float[] weights) {
         if (weights == null || weights.length == 0) {
             throw new IllegalArgumentException("Cannot quantize an empty model.");

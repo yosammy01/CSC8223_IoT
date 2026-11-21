@@ -8,8 +8,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
+/** Defines the JavaBackendApplication component. */
 public class JavaBackendApplication {
 
+    /** Performs the main operation. */
+    /** Starts the Spring Boot application. */
     public static void main(String[] args) {
         SpringApplication.run(JavaBackendApplication.class, args);
     }

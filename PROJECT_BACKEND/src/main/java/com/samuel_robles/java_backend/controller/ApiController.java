@@ -13,15 +13,20 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api")
+/** Defines the ApiController component. */
 public class ApiController {
 
+    /** Stores the applicationName value. */
+    /** Stores the configured application name. */
     private final String applicationName;
 
+    /** Performs the ApiController operation. */
     public ApiController(@Value("${spring.application.name:JAVA_BACKEND}") String applicationName) {
         this.applicationName = applicationName;
     }
 
     @GetMapping
+    /** Performs the root operation. */
     public ApiInfoResponse root() {
         return new ApiInfoResponse(
                 applicationName,
@@ -32,13 +37,16 @@ public class ApiController {
     }
 
     @GetMapping("/health")
+    /** Performs the health operation. */
     public ApiHealthResponse health() {
         return new ApiHealthResponse("UP", Instant.now());
     }
 
+    /** Defines the ApiInfoResponse component. */
     public record ApiInfoResponse(String application, String status, String message, String version, Instant timestamp) {
     }
 
+    /** Defines the ApiHealthResponse component. */
     public record ApiHealthResponse(String status, Instant timestamp) {
     }
 

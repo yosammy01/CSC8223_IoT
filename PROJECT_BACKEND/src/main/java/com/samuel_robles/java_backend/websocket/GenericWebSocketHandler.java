@@ -17,13 +17,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
+/** Defines the GenericWebSocketHandler component. */
 public class GenericWebSocketHandler extends TextWebSocketHandler {
 
+    /** Performs the newScheduledThreadPool operation. */
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
+    /** Stores the tasks value. */
     private final ConcurrentMap<WebSocketSession, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+    /** Stores per-session elapsed-time counters. */
     private final ConcurrentMap<WebSocketSession, AtomicInteger> counters = new ConcurrentHashMap<>();
 
     @Override
+    /** Performs the afterConnectionEstablished operation. */
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         AtomicInteger counter = new AtomicInteger(0);
         counters.put(session, counter);
@@ -41,6 +46,7 @@ public class GenericWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
+    /** Performs the afterConnectionClosed operation. */
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         ScheduledFuture<?> f = tasks.remove(session);
         if (f != null) f.cancel(true);
@@ -48,6 +54,7 @@ public class GenericWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
+    /** Performs the handleTransportError operation. */
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         ScheduledFuture<?> f = tasks.remove(session);
         if (f != null) f.cancel(true);
@@ -56,6 +63,7 @@ public class GenericWebSocketHandler extends TextWebSocketHandler {
     }
 
     @PreDestroy
+    /** Performs the shutdown operation. */
     public void shutdown() {
         scheduler.shutdownNow();
     }

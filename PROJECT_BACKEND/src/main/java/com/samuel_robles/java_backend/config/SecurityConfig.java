@@ -12,9 +12,11 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+/** Defines the SecurityConfig component. */
 public class SecurityConfig {
 
     @Bean
+    /** Creates the HTTP security filter chain. */
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)

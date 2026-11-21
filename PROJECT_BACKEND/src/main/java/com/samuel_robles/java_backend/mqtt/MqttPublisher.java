@@ -14,12 +14,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+/** Defines the MqttPublisher component. */
 public class MqttPublisher {
 
+    /** Stores the mqttOutboundChannel value. */
     private final MessageChannel mqttOutboundChannel;
+    /** Stores the defaultTopic value. */
     private final String defaultTopic;
+    /** Stores the defaultQos value. */
     private final int defaultQos;
 
+    /** Performs the MqttPublisher operation. */
     public MqttPublisher(
             @Qualifier("mqttOutboundChannel") MessageChannel mqttOutboundChannel,
             @Value("${app.mqtt.default-topic}") String defaultTopic,
@@ -29,14 +34,17 @@ public class MqttPublisher {
         this.defaultQos = defaultQos;
     }
 
+    /** Performs the publish operation. */
     public void publish(String payload, String topic, Integer qos, Boolean retained) {
         publishPayload(payload, topic, qos, retained);
     }
 
+    /** Performs the publish operation. */
     public void publish(byte[] payload, String topic, Integer qos, Boolean retained) {
         publishPayload(payload, topic, qos, retained);
     }
 
+    /** Performs the publishPayload operation. */
     private void publishPayload(Object payload, String topic, Integer qos, Boolean retained) {
         String targetTopic = StringUtils.hasText(topic) ? topic : defaultTopic;
         int targetQos = qos != null ? qos : defaultQos;

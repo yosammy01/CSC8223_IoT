@@ -1,6 +1,7 @@
 /**
- * Collects client model updates, performs FedAvg, persists snapshots, and
- * publishes the resulting global model. See README.md for the workflow.
+ * Collects client model updates, performs FedAvg, persists only the latest
+ * global snapshot, and publishes the resulting global model. See README.md
+ * for the workflow.
  */
 package com.samuel_robles.java_backend.federated;
 
@@ -18,22 +19,42 @@ import org.slf4j.LoggerFactory;
 import com.samuel_robles.java_backend.mqtt.MqttPublisher;
 
 @Service
+/** Defines the FederatedAggregationService component. */
 public class FederatedAggregationService {
 
+    /** Performs the getLogger operation. */
     private static final Logger logger = LoggerFactory.getLogger(FederatedAggregationService.class);
 
+    /** Stores the mqttPublisher value. */
     private final MqttPublisher mqttPublisher;
+    /** Stores the expectedClients value. */
+    /** Stores the configured number of clients required for aggregation. */
     private final int expectedClients;
+    /** Stores the globalWeightsTopic value. */
+    /** Stores the MQTT topic for global model weights. */
     private final String globalWeightsTopic;
+    /** Stores the snapshotRepository value. */
     private final FederatedModelSnapshotRepository snapshotRepository;
+    /** Stores the jdbcTemplate value. */
+    /** Stores the JDBC access template. */
     private final JdbcTemplate jdbcTemplate;
+    /** Stores updates awaiting a completed federated round. */
     private final Map<String, float[]> pendingUpdates = new LinkedHashMap<>();
+    /** Stores the latestClientWeights value. */
     private final Map<String, float[]> latestClientWeights = new LinkedHashMap<>();
+    /** Stores the latestGlobalWeights value. */
+    /** Stores the latest aggregated global weights. */
     private float[] latestGlobalWeights;
+    /** Stores the lastAggregationAt value. */
+    /** Stores the time of the latest aggregation. */
     private Instant lastAggregationAt;
+    /** Stores the receivedUpdates value. */
     private final AtomicLong receivedUpdates = new AtomicLong();
+    /** Performs the AtomicLong operation. */
+    /** Counts completed federated rounds. */
     private final AtomicLong completedRounds = new AtomicLong();
 
+    /** Performs the FederatedAggregationService operation. */
     public FederatedAggregationService(
             MqttPublisher mqttPublisher,
             @Value("${app.federated.expected-clients:2}") int expectedClients,
@@ -54,6 +75,7 @@ public class FederatedAggregationService {
         loadPersistedModels();
     }
 
+    /** Performs the migratePayloadColumn operation. */
     private void migratePayloadColumn() {
         String dataType = jdbcTemplate.queryForObject(
                 """
@@ -71,6 +93,7 @@ public class FederatedAggregationService {
         }
     }
 
+    /** Performs the loadPersistedModels operation. */
     private void loadPersistedModels() {
         snapshotRepository.findBySnapshotKey("GLOBAL").ifPresent(snapshot -> {
             try {
@@ -87,6 +110,7 @@ public class FederatedAggregationService {
         });
     }
 
+    /** Performs the accept operation. */
     public synchronized void accept(String clientId, byte[] payload) {
         float[] update = QuantizedWeightsCodec.decode(payload);
         if (update.length != QuantizedWeightsCodec.EXPECTED_WEIGHT_COUNT) {
@@ -138,16 +162,19 @@ public class FederatedAggregationService {
                 true);
     }
 
+    /** Performs the validateClientId operation. */
     public synchronized void validateClientId(String clientId) {
         if (clientId == null || clientId.isBlank()) {
             throw new IllegalArgumentException("A client ID is required for local federated weights.");
         }
     }
 
+    /** Performs the republishAllModels operation. */
     public synchronized void republishAllModels() {
         republishLatestGlobalWeights();
     }
 
+    /** Performs the resetAggregationStatus operation. */
     public synchronized void resetAggregationStatus() {
         pendingUpdates.clear();
         latestClientWeights.clear();
@@ -156,6 +183,7 @@ public class FederatedAggregationService {
         lastAggregationAt = null;
     }
 
+    /** Performs the republishLatestGlobalWeights operation. */
     public synchronized void republishLatestGlobalWeights() {
         if (latestGlobalWeights == null) {
             throw new IllegalStateException("No global model has been aggregated yet.");
@@ -167,6 +195,7 @@ public class FederatedAggregationService {
                 true);
     }
 
+    /** Performs the status operation. */
     public synchronized FederatedStatus status() {
         return new FederatedStatus(
                 receivedUpdates.get(),
@@ -177,6 +206,7 @@ public class FederatedAggregationService {
                 lastAggregationAt);
     }
 
+    /** Defines the FederatedStatus component. */
     public record FederatedStatus(
             long receivedUpdates,
             long completedRounds,

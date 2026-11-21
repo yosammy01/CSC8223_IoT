@@ -17,15 +17,19 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import jakarta.annotation.PreDestroy;
 
 @Component
+/** Defines the TelemetryWebSocketHandler component. */
 public class TelemetryWebSocketHandler extends TextWebSocketHandler {
 
+    /** Stores connected telemetry sessions by identifier. */
     private final ConcurrentMap<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
 
     @Override
+    /** Performs the afterConnectionEstablished operation. */
     public void afterConnectionEstablished(WebSocketSession session) {
         sessions.put(session.getId(), session);
     }
 
+    /** Performs the broadcast operation. */
     public void broadcast(String telemetryJson) {
         TextMessage message = new TextMessage(telemetryJson);
         sessions.values().removeIf(session -> {
@@ -44,11 +48,13 @@ public class TelemetryWebSocketHandler extends TextWebSocketHandler {
     }
 
     @Override
+    /** Performs the afterConnectionClosed operation. */
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         sessions.remove(session.getId());
     }
 
     @Override
+    /** Performs the handleTransportError operation. */
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         sessions.remove(session.getId());
         if (session.isOpen()) {
@@ -57,6 +63,7 @@ public class TelemetryWebSocketHandler extends TextWebSocketHandler {
     }
 
     @PreDestroy
+    /** Performs the shutdown operation. */
     public void shutdown() {
         sessions.clear();
     }

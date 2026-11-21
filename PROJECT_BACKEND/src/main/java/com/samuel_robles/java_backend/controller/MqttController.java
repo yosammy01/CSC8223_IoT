@@ -26,15 +26,22 @@ import com.samuel_robles.java_backend.mqtt.MqttPublisher;
 
 @RestController
 @RequestMapping("/api/mqtt")
+/** Defines the MqttController component. */
 public class MqttController {
 
+    /** Performs the getLogger operation. */
     private static final Logger logger = LoggerFactory.getLogger(MqttController.class);
 
+    /** Stores the mqttPublisher value. */
     private final MqttPublisher mqttPublisher;
+    /** Stores the mqttMessageStore value. */
     private final MqttMessageStore mqttMessageStore;
+    /** Stores the federatedAggregationService value. */
     private final FederatedAggregationService federatedAggregationService;
+    /** Stores the commandsTopic value. */
     private final String commandsTopic;
 
+    /** Performs the MqttController operation. */
     public MqttController(
             MqttPublisher mqttPublisher,
             MqttMessageStore mqttMessageStore,
@@ -48,6 +55,7 @@ public class MqttController {
 
     @PostMapping("/publish")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the publish operation. */
     public PublishResponse publish(@RequestBody PublishRequest request) {
         if (request == null || !StringUtils.hasText(request.payload())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Payload is required.");
@@ -58,12 +66,14 @@ public class MqttController {
     }
 
     @GetMapping("/latest")
+    /** Performs the latest operation. */
     public LatestMessageResponse latest() {
         return new LatestMessageResponse(mqttMessageStore.latestMessage().orElse(null), Instant.now());
     }
 
     @PostMapping("/federated/command")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the publishFederatedCommand operation. */
     public PublishResponse publishFederatedCommand(@RequestBody JsonNode command) {
         if (command == null || !command.isObject()
                 || !command.hasNonNull("command")
@@ -76,12 +86,14 @@ public class MqttController {
     }
 
     @GetMapping("/federated/status")
+    /** Performs the federatedStatus operation. */
     public FederatedAggregationService.FederatedStatus federatedStatus() {
         return federatedAggregationService.status();
     }
 
     @PostMapping("/federated/status/reset")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the resetFederatedStatus operation. */
     public PublishResponse resetFederatedStatus() {
         federatedAggregationService.resetAggregationStatus();
         logger.info("REST_AUDIT federated_status_reset");
@@ -90,6 +102,7 @@ public class MqttController {
 
     @PostMapping("/federated/model/republish")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the republishGlobalModel operation. */
     public PublishResponse republishGlobalModel() {
         federatedAggregationService.republishLatestGlobalWeights();
         return new PublishResponse("queued", Instant.now());
@@ -97,6 +110,7 @@ public class MqttController {
 
     @PostMapping("/federated/model/republish-all")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the republishAllModels operation. */
     public PublishResponse republishAllModels() {
         federatedAggregationService.republishAllModels();
         return new PublishResponse("queued", Instant.now());
@@ -104,6 +118,7 @@ public class MqttController {
 
     @PostMapping("/federated/model/toggle")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the toggleActiveModel operation. */
     public PublishResponse toggleActiveModel(@RequestBody ModelSelectionRequest request) {
         if (request == null || request.activeModel() == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "activeModel must be LOCAL or GLOBAL.");
@@ -119,6 +134,7 @@ public class MqttController {
 
     @PostMapping("/federated/training")
     @ResponseStatus(HttpStatus.ACCEPTED)
+    /** Performs the startTraining operation. */
     public PublishResponse startTraining(@RequestBody TrainingRequest request) {
         if (request == null || request.useQuantization() == null) {
             throw new ResponseStatusException(
@@ -135,23 +151,31 @@ public class MqttController {
         return new PublishResponse("queued", Instant.now());
     }
 
+    /** Defines the PublishRequest component. */
     public record PublishRequest(String payload, String topic, Integer qos, Boolean retained) {
     }
 
+    /** Defines the ModelSelectionRequest component. */
     public record ModelSelectionRequest(ActiveModel activeModel) {
     }
 
+    /** Defines the TrainingRequest component. */
     public record TrainingRequest(Boolean useQuantization) {
     }
 
+    /** Defines the ActiveModel component. */
     public enum ActiveModel {
+        /** Represents the local option. */
         LOCAL,
+        /** Represents the global option. */
         GLOBAL
     }
 
+    /** Defines the PublishResponse component. */
     public record PublishResponse(String status, Instant timestamp) {
     }
 
+    /** Defines the LatestMessageResponse component. */
     public record LatestMessageResponse(MqttMessageStore.ReceivedMqttMessage message, Instant timestamp) {
     }
 }

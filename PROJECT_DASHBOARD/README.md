@@ -34,7 +34,7 @@ The system is partitioned into three tiers that strictly enforce the **Federated
 
 2. **Orchestration Tier (`PROJECT_BACKEND` + Eclipse Mosquitto)**:
    - `MqttIntegrationConfig.java` subscribes to `federated/local/weights/#` and `federated/telemetry/#`.
-   - `FederatedAggregationService.java` decodes incoming quantized client updates via `QuantizedWeightsCodec.java`, executes **Federated Averaging (FedAvg)** once `expectedClients` (2) updates arrive, persists snapshots via `FederatedModelSnapshotRepository`, and broadcasts the updated global model to `federated/global/weights`.
+   - `FederatedAggregationService.java` decodes incoming quantized client updates via `QuantizedWeightsCodec.java`, executes **Federated Averaging (FedAvg)** once `expectedClients` (2) updates arrive, persists only the latest `GLOBAL` snapshot through JPA/`FederatedModelSnapshotRepository`, and broadcasts the updated global model to `federated/global/weights`. Local client updates remain in memory.
    - `TelemetryWebSocketHandler.java` broadcasts live edge pose telemetry to connected web clients over `/ws/telemetry`.
 
 3. **Visualization & Control Tier (`PROJECT_DASHBOARD`)**:
@@ -155,7 +155,7 @@ Every code file in `PROJECT_DASHBOARD` includes a top-of-file `FILE README` head
 - **React / Vite / Tailwind**: React `^19.2.8`, Vite `^8.2.0`, Tailwind CSS `^4.3.3`, TypeScript `~6.0.2`
 - **Companion Services** (for live hardware mode):
   - Eclipse Mosquitto MQTT Broker (`tcp://localhost:1883`)
-  - Spring Boot Backend (`PROJECT_BACKEND` on `http://localhost:8080`, Java 21+)
+  - Spring Boot Backend (`PROJECT_BACKEND` on `http://localhost:8080`, Java 26)
   - Two Android Devices running `PROJECT_ANDROID` (Android 8.0+ / API 26+)
 
 ### Step-by-Step Build & Run Commands
@@ -192,5 +192,5 @@ npm run lint
    - Test both phones across all 6 poses (`Screen Up`, `Screen Down`, `Portrait Up`, `Portrait Down`, `Landscape Left`, `Landscape Right`) to show accurate recognition across the entire domain.
 4. **Present Quantitative Evaluation & Technical Contribution**:
    - Open **2. Three-Model Comparison (6×6 Matrices)** to show the confusion matrices, Macro-F1 scores, and live prediction capture.
-   - Open **3. 8-Bit Quantization Contribution** to show the `984 B` $\rightarrow$ `250 B` (**74.59%**) MQTT payload reduction and inspect individual quantized weights.
+   - Open **3. 8-Bit Quantization Contribution** to show the `2008 B` $\rightarrow$ `506 B` (**74.80%**) MQTT payload reduction and inspect individual quantized weights.
 

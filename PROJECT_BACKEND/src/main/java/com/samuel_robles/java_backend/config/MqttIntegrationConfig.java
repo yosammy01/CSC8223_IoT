@@ -28,11 +28,15 @@ import com.samuel_robles.java_backend.federated.FederatedAggregationService;
 import com.samuel_robles.java_backend.websocket.TelemetryWebSocketHandler;
 
 @Configuration
+/** Defines the MqttIntegrationConfig component. */
 public class MqttIntegrationConfig {
 
+    /** Performs the getLogger operation. */
+    /** Stores the MQTT integration logger. */
     private static final Logger logger = LoggerFactory.getLogger(MqttIntegrationConfig.class);
 
     @Bean
+    /** Creates the MQTT client factory. */
     MqttPahoClientFactory mqttClientFactory(
             @Value("${app.mqtt.url}") String brokerUrl,
             @Value("${app.mqtt.username:}") String username,
@@ -54,12 +58,14 @@ public class MqttIntegrationConfig {
     }
 
     @Bean
+    /** Creates the outbound MQTT channel. */
     MessageChannel mqttOutboundChannel() {
         return new DirectChannel();
     }
 
     @Bean
     @ServiceActivator(inputChannel = "mqttOutboundChannel")
+    /** Creates the outbound MQTT message handler. */
     MessageHandler mqttOutboundHandler(
             MqttPahoClientFactory mqttClientFactory,
             @Value("${app.mqtt.client-id-prefix}") String clientIdPrefix,
@@ -74,11 +80,13 @@ public class MqttIntegrationConfig {
     }
 
     @Bean
+    /** Creates the inbound MQTT channel. */
     MessageChannel mqttInboundChannel() {
         return new DirectChannel();
     }
 
     @Bean
+    /** Creates the inbound MQTT adapter. */
     MessageProducer mqttInboundAdapter(
             MqttPahoClientFactory mqttClientFactory,
             @Value("${app.mqtt.client-id-prefix}") String clientIdPrefix,
@@ -100,6 +108,7 @@ public class MqttIntegrationConfig {
 
     @Bean
     @ServiceActivator(inputChannel = "mqttInboundChannel")
+    /** Creates the inbound MQTT message handler. */
     MessageHandler mqttInboundHandler(
             MqttMessageStore mqttMessageStore,
             FederatedAggregationService aggregationService,
@@ -145,6 +154,7 @@ public class MqttIntegrationConfig {
         };
     }
 
+    /** Performs the topicMatches operation. */
     private static boolean topicMatches(String configuredTopic, String receivedTopic) {
         if (configuredTopic == null || receivedTopic == null) {
             return false;
@@ -155,6 +165,7 @@ public class MqttIntegrationConfig {
         return receivedTopic.equals(baseTopic) || receivedTopic.startsWith(baseTopic + "/");
     }
 
+    /** Performs the topicFilter operation. */
     private static String topicFilter(String configuredTopic) {
         return configuredTopic.endsWith("/#") ? configuredTopic : configuredTopic + "/#";
     }

@@ -11,15 +11,23 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
+/** Defines the MqttConnectPublisher component. */
 public class MqttConnectPublisher {
 
+    /** Stores the mqttPublisher value. */
     private final MqttPublisher mqttPublisher;
+    /** Stores the enabled value. */
     private final boolean enabled;
+    /** Stores the topic value. */
     private final String topic;
+    /** Stores the payload value. */
     private final String payload;
+    /** Stores the qos value. */
     private final int qos;
+    /** Stores the retained value. */
     private final boolean retained;
 
+    /** Performs the MqttConnectPublisher operation. */
     public MqttConnectPublisher(
             MqttPublisher mqttPublisher,
             @Value("${app.mqtt.connect-publish.enabled:false}") boolean enabled,
@@ -36,6 +44,7 @@ public class MqttConnectPublisher {
     }
 
     @EventListener(MqttSubscribedEvent.class)
+    /** Performs the publishOnConnect operation. */
     public void publishOnConnect() {
         if (!enabled) {
             return;
