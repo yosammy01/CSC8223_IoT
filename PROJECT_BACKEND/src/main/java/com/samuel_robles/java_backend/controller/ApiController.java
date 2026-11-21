@@ -25,13 +25,16 @@ public class ApiController {
         this.applicationName = applicationName;
     }
 
+    /**
+     * Manually used to verify that the Spring Boot server is running and responding.
+     * It also returns basic application metadata, status, and version information.
+     */
     @GetMapping
-    /** Performs the root operation. */
     public ApiInfoResponse root() {
         return new ApiInfoResponse(
                 applicationName,
                 "running",
-                "Generic API scaffold ready for new functionality.",
+                "The server is running.",
                 "v1",
                 Instant.now());
     }

@@ -31,7 +31,7 @@ class ApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.application").value("JAVA_BACKEND"))
                 .andExpect(jsonPath("$.status").value("running"))
-                .andExpect(jsonPath("$.message").value("Generic API scaffold ready for new functionality."))
+                .andExpect(jsonPath("$.message").value("The server is running."))
                 .andExpect(jsonPath("$.version").value("v1"));
     }
 

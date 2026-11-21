@@ -1,6 +1,7 @@
 /**
- * Handles the seconds WebSocket endpoint used by existing client flows.
- * See README.md for the backend WebSocket surface.
+ * Demonstration-only WebSocket handler for the seconds endpoint.
+ * This endpoint is not used by the Android or dashboard federated-learning flows.
+ * It is registered in WebSocketConfig for compatibility and manual testing.
  */
 package com.samuel_robles.java_backend.websocket;
 

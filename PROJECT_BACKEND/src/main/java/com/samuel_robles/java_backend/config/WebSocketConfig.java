@@ -35,6 +35,7 @@ public WebSocketConfig(
     @Override
     /** Performs the registerWebSocketHandlers operation. */
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
+        // Demonstration-only endpoints; not used by the Android or React data flow.
         registry.addHandler(secondsWebSocketHandler, "/ws/seconds").setAllowedOrigins("*");
         registry.addHandler(websocketHandler, "/ws/generic").setAllowedOrigins("*");
         registry.addHandler(telemetryWebSocketHandler, "/ws/telemetry").setAllowedOrigins("*");

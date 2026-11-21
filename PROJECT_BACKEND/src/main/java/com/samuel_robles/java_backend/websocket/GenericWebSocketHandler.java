@@ -1,6 +1,7 @@
 /**
- * Handles the generic WebSocket endpoint reserved for dashboard extensions.
- * See README.md for the backend WebSocket surface.
+ * Demonstration-only WebSocket handler for the generic endpoint.
+ * This endpoint is not used by the Android or dashboard federated-learning flows.
+ * It is registered in WebSocketConfig for compatibility and manual testing.
  */
 package com.samuel_robles.java_backend.websocket;
 
