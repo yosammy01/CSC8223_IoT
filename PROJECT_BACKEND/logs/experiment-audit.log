@@ -258,3 +258,28 @@
 2026-11-23T11:36:15.321-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=6 pending_clients=2/2
 2026-11-23T11:36:15.426-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=5 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
 2026-11-23T11:36:15.426-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T11:44:11.588-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T11:44:11.590-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T11:44:13.683-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=23
+2026-11-23T11:44:13.684-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_ALL
+2026-11-23T11:44:18.952-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T11:44:18.952-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T11:44:20.013-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=23
+2026-11-23T11:44:20.013-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_ALL
+2026-11-23T11:44:33.872-05:00 INFO  - REST_AUDIT federated_status_reset
+2026-11-23T11:47:52.672-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=1 pending_clients=1/2
+2026-11-23T11:49:44.474-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=2 pending_clients=2/2
+2026-11-23T11:49:44.642-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=1 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T11:49:44.644-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T12:07:38.629-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=3 pending_clients=2/2
+2026-11-23T12:07:38.817-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=2 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T12:07:38.820-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T12:08:13.707-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=4 pending_clients=2/2
+2026-11-23T12:08:13.723-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=3 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T12:08:13.724-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T12:21:36.527-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=5 pending_clients=2/2
+2026-11-23T12:21:36.615-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=4 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T12:21:36.616-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T12:21:50.784-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=6 pending_clients=2/2
+2026-11-23T12:21:50.795-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=5 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T12:21:50.796-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
