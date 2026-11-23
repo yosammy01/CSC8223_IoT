@@ -151,6 +151,13 @@ train models on the server.
 | `APP_MQTT_USERNAME` | empty |
 | `APP_MQTT_PASSWORD` | empty |
 | `APP_MQTT_CONNECT_PUBLISH_ENABLED` | `true` |
+| `APP_AUDIT_LOG_FILE` | `logs/experiment-audit.log` |
+
+Experiment/non-inference traffic is written to `logs/experiment-audit.log` by
+default. This includes inbound local-model updates, outbound MQTT messages,
+FedAvg aggregation events, and federated REST actions. Raw inference/telemetry
+payloads are not written to this file. Set `APP_AUDIT_LOG_FILE` to change the
+path; rolled audit files are kept for 30 days.
 
 Topic settings can also be overridden with `APP_MQTT_DEFAULT_TOPIC`,
 `APP_MQTT_INBOUND_TOPIC`, `APP_MQTT_LOCAL_WEIGHTS_TOPIC`,

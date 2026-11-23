@@ -1,0 +1,203 @@
+2026-11-23T09:26:10.260-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=java_backend/default qos=1 retained=false payload_bytes=22
+2026-11-23T09:27:19.739-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=java_backend/default qos=1 retained=false payload_bytes=22
+2026-11-23T09:34:51.292-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=23
+2026-11-23T09:34:51.297-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_ALL
+2026-11-23T09:34:52.333-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T09:34:52.334-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T09:34:53.969-05:00 INFO  - REST_AUDIT federated_status_reset
+2026-11-23T09:52:42.969-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=java_backend/default qos=1 retained=false payload_bytes=22
+2026-11-23T09:55:02.384-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T09:55:02.396-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T09:55:03.341-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=23
+2026-11-23T09:55:03.342-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_ALL
+2026-11-23T09:55:06.078-05:00 INFO  - REST_AUDIT federated_status_reset
+2026-11-23T09:55:55.323-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T09:55:55.324-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T09:55:56.103-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=23
+2026-11-23T09:55:56.105-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_ALL
+2026-11-23T09:55:58.833-05:00 INFO  - REST_AUDIT federated_status_reset
+2026-11-23T10:00:27.038-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:27.077-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=1 pending_clients=1/2
+2026-11-23T10:00:27.975-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:27.975-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=2 pending_clients=1/2
+2026-11-23T10:00:28.979-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:28.980-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=3 pending_clients=1/2
+2026-11-23T10:00:29.955-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:29.955-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=4 pending_clients=1/2
+2026-11-23T10:00:30.976-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:30.977-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=5 pending_clients=1/2
+2026-11-23T10:00:38.077-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:38.078-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=6 pending_clients=1/2
+2026-11-23T10:00:39.076-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:39.076-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=7 pending_clients=1/2
+2026-11-23T10:00:40.047-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:40.047-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=8 pending_clients=1/2
+2026-11-23T10:00:41.077-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:41.077-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=9 pending_clients=1/2
+2026-11-23T10:00:42.113-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:42.114-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=10 pending_clients=1/2
+2026-11-23T10:00:51.577-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:51.581-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=11 pending_clients=1/2
+2026-11-23T10:00:52.554-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:52.554-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=12 pending_clients=1/2
+2026-11-23T10:00:53.578-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:53.579-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=13 pending_clients=1/2
+2026-11-23T10:00:54.547-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:54.548-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=14 pending_clients=1/2
+2026-11-23T10:00:55.578-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:00:55.579-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=15 pending_clients=1/2
+2026-11-23T10:03:27.771-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:27.774-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=16 pending_clients=2/2
+2026-11-23T10:03:28.716-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=1 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:28.718-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:28.730-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:28.730-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=17 pending_clients=2/2
+2026-11-23T10:03:28.744-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=2 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:28.744-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:29.726-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:29.730-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=18 pending_clients=2/2
+2026-11-23T10:03:29.747-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=3 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:29.748-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:30.733-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:30.734-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=19 pending_clients=2/2
+2026-11-23T10:03:30.749-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=4 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:30.751-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:31.727-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:31.727-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=20 pending_clients=2/2
+2026-11-23T10:03:31.747-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=5 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:31.747-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:40.002-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:40.002-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=21 pending_clients=2/2
+2026-11-23T10:03:40.017-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=6 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:40.017-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:41.004-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:41.004-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=22 pending_clients=2/2
+2026-11-23T10:03:41.017-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=7 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:41.018-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:42.031-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:42.031-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=23 pending_clients=2/2
+2026-11-23T10:03:42.047-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=8 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:42.048-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:43.032-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:43.032-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=24 pending_clients=2/2
+2026-11-23T10:03:43.046-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=9 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:43.046-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:44.040-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:44.041-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=25 pending_clients=2/2
+2026-11-23T10:03:44.052-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=10 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:44.052-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:51.632-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:51.633-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=26 pending_clients=2/2
+2026-11-23T10:03:51.648-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=11 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:51.650-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:52.604-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:52.604-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=27 pending_clients=2/2
+2026-11-23T10:03:52.618-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=12 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:52.619-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:53.608-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:53.609-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=28 pending_clients=2/2
+2026-11-23T10:03:53.621-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=13 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:53.622-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:54.607-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:54.607-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=29 pending_clients=2/2
+2026-11-23T10:03:54.618-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=14 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:54.619-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:03:55.666-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:03:55.667-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=30 pending_clients=2/2
+2026-11-23T10:03:55.681-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=15 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:03:55.682-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:05:11.806-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:05:11.807-05:00 INFO  - REST_AUDIT global_model_republish_queued
+2026-11-23T10:05:57.005-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/commands qos=1 retained=false payload_bytes=26
+2026-11-23T10:05:57.005-05:00 INFO  - REST_AUDIT federated_command_queued topic=federated/commands command=RESET_GLOBAL
+2026-11-23T10:06:12.938-05:00 INFO  - REST_AUDIT federated_status_reset
+2026-11-23T10:06:37.383-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:37.383-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=1 pending_clients=1/2
+2026-11-23T10:06:38.346-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:38.346-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=2 pending_clients=1/2
+2026-11-23T10:06:39.381-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:39.381-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=3 pending_clients=1/2
+2026-11-23T10:06:40.380-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:40.380-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=4 pending_clients=1/2
+2026-11-23T10:06:41.411-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:41.411-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=5 pending_clients=1/2
+2026-11-23T10:06:48.895-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:48.896-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=6 pending_clients=1/2
+2026-11-23T10:06:49.856-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:49.856-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=7 pending_clients=1/2
+2026-11-23T10:06:50.851-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:50.852-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=8 pending_clients=1/2
+2026-11-23T10:06:51.856-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:51.856-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=9 pending_clients=1/2
+2026-11-23T10:06:52.885-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:06:52.885-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=10 pending_clients=1/2
+2026-11-23T10:07:03.889-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:03.889-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=11 pending_clients=1/2
+2026-11-23T10:07:04.895-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:04.895-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=12 pending_clients=1/2
+2026-11-23T10:07:05.860-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:05.861-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=13 pending_clients=1/2
+2026-11-23T10:07:06.857-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:06.857-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=14 pending_clients=1/2
+2026-11-23T10:07:07.932-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_baa4 client=EdgeClient_baa4 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:07.933-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_baa4 weight_count=502 received_updates=15 pending_clients=1/2
+2026-11-23T10:07:39.911-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:39.911-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=16 pending_clients=2/2
+2026-11-23T10:07:39.957-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=1 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:39.958-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:40.881-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:40.883-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=17 pending_clients=2/2
+2026-11-23T10:07:40.896-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=2 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:40.897-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:41.910-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:41.910-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=18 pending_clients=2/2
+2026-11-23T10:07:41.924-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=3 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:41.925-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:42.889-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:42.889-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=19 pending_clients=2/2
+2026-11-23T10:07:42.901-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=4 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:42.903-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:43.914-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:43.914-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=20 pending_clients=2/2
+2026-11-23T10:07:43.928-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=5 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:43.929-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:56.817-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:56.817-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=21 pending_clients=2/2
+2026-11-23T10:07:56.835-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=6 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:56.836-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:57.785-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:57.786-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=22 pending_clients=2/2
+2026-11-23T10:07:57.795-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=7 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:57.795-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:58.817-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:58.820-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=23 pending_clients=2/2
+2026-11-23T10:07:58.832-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=8 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:58.833-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:07:59.820-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:07:59.820-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=24 pending_clients=2/2
+2026-11-23T10:07:59.829-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=9 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:07:59.829-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:00.823-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:00.824-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=25 pending_clients=2/2
+2026-11-23T10:08:00.834-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=10 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:00.834-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:11.623-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:11.623-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=26 pending_clients=2/2
+2026-11-23T10:08:11.635-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=11 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:11.636-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:12.635-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:12.635-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=27 pending_clients=2/2
+2026-11-23T10:08:12.647-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=12 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:12.648-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:13.593-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:13.594-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=28 pending_clients=2/2
+2026-11-23T10:08:13.611-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=13 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:13.612-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:14.582-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:14.582-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=29 pending_clients=2/2
+2026-11-23T10:08:14.593-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=14 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:14.594-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506
+2026-11-23T10:08:15.652-05:00 INFO  - PRIVACY_AUDIT mqtt_inbound topic=federated/local/weights/EdgeClient_7557 client=EdgeClient_7557 payload_type=quantized_model payload_bytes=506 raw_sensor_samples=false
+2026-11-23T10:08:15.652-05:00 INFO  - FEDAVG_AUDIT update_accepted client=EdgeClient_7557 weight_count=502 received_updates=30 pending_clients=2/2
+2026-11-23T10:08:15.665-05:00 INFO  - FEDAVG_AUDIT aggregation_complete round=15 clients=2 weight_count=502 output_payload_bytes=506 persisted=true
+2026-11-23T10:08:15.666-05:00 INFO  - MQTT_AUDIT mqtt_outbound topic=federated/global/weights qos=1 retained=true payload_bytes=506

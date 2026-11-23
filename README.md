@@ -207,3 +207,12 @@ cd PROJECT_ANDROID
 ```
 On each phone, enter the computer's LAN IP address in the **Broker IP** field and tap **Connect**.
 
+### 4. Viewing Server Audit Logs (`PROJECT_BACKEND/logs/experiment-audit.log`)
+The Spring Boot backend automatically writes all federated and MQTT control traffic—local model updates, FedAvg rounds and aggregation, federated REST actions, outbound MQTT messages, and global-model republishing—to `PROJECT_BACKEND/logs/experiment-audit.log` while **excluding** high-frequency inference telemetry. It rolls daily at `10 MB` (retaining 30 files) and can be overridden with `APP_AUDIT_LOG_FILE`.
+
+```powershell
+# Stream the clean server audit log live during experiments or demonstrations
+Get-Content .\PROJECT_BACKEND\logs\experiment-audit.log -Wait
+```
+
+

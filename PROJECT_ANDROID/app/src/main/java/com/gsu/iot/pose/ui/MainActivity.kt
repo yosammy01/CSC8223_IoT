@@ -308,12 +308,13 @@ fun PoseClientScreen() {
                                 retrainFromDataset()
                                 DatasetPersister.saveTrainingDataset(context, trainingDataset)
                                 playBeepSound(ToneGenerator.TONE_PROP_BEEP2, 300)
-                            }
 
-                            val totalSamples = trainingDataset.values.sumOf { it.size }
-                            if (totalSamples % 10 == 0) {
-                                val localWeights = ModelManager.localModel.getWeights()
-                                MqttClientManager.publishLocalWeights(localWeights)
+                                // Only publish local model updates to the MQTT broker after 3 complete poses (50/50 samples) have been trained
+                                val completedPosesCount = trainingDataset.values.count { it.size >= targetSampleLimit }
+                                if (completedPosesCount > 0 && completedPosesCount % 3 == 0) {
+                                    val localWeights = ModelManager.localModel.getWeights()
+                                    MqttClientManager.publishLocalWeights(localWeights)
+                                }
                             }
                         } else {
                             isRecordingActive = false

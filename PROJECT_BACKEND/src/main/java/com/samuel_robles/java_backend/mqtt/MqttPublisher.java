@@ -12,10 +12,14 @@ import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 /** Defines the MqttPublisher component. */
 public class MqttPublisher {
+
+    private static final Logger auditLogger = LoggerFactory.getLogger("experiment.audit");
 
     /** Stores the mqttOutboundChannel value. */
     private final MessageChannel mqttOutboundChannel;
@@ -57,7 +61,13 @@ public class MqttPublisher {
                 .build();
 
         boolean sent = mqttOutboundChannel.send(message);
-        if (!sent) {
+        if (sent) {
+            int payloadBytes = payload instanceof byte[] bytes
+                    ? bytes.length
+                    : String.valueOf(payload).getBytes(java.nio.charset.StandardCharsets.UTF_8).length;
+            auditLogger.info("MQTT_AUDIT mqtt_outbound topic={} qos={} retained={} payload_bytes={}",
+                    targetTopic, targetQos, targetRetained, payloadBytes);
+        } else {
             throw new IllegalStateException("Failed to send MQTT message to outbound channel.");
         }
     }

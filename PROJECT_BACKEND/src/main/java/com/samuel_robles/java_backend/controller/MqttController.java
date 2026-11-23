@@ -4,6 +4,7 @@
  */
 package com.samuel_robles.java_backend.controller;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ public class MqttController {
 
     /** Performs the getLogger operation. */
     private static final Logger logger = LoggerFactory.getLogger(MqttController.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("experiment.audit");
 
     /** Stores the mqttPublisher value. */
     private final MqttPublisher mqttPublisher;
@@ -62,6 +64,8 @@ public class MqttController {
         }
 
         mqttPublisher.publish(request.payload(), request.topic(), request.qos(), request.retained());
+        auditLogger.info("REST_AUDIT mqtt_publish topic={} qos={} retained={} payload_bytes={}",
+                request.topic(), request.qos(), request.retained(), request.payload().getBytes(StandardCharsets.UTF_8).length);
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -81,7 +85,7 @@ public class MqttController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A JSON command is required.");
         }
         mqttPublisher.publish(command.toString(), commandsTopic, 1, false);
-        logger.info("REST_AUDIT federated_command_queued topic={} command={}", commandsTopic, command.get("command").asText());
+        auditLogger.info("REST_AUDIT federated_command_queued topic={} command={}", commandsTopic, command.get("command").asText());
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -96,7 +100,7 @@ public class MqttController {
     /** Performs the resetFederatedStatus operation. */
     public PublishResponse resetFederatedStatus() {
         federatedAggregationService.resetAggregationStatus();
-        logger.info("REST_AUDIT federated_status_reset");
+        auditLogger.info("REST_AUDIT federated_status_reset");
         return new PublishResponse("reset", Instant.now());
     }
 
@@ -105,6 +109,7 @@ public class MqttController {
     /** Performs the republishGlobalModel operation. */
     public PublishResponse republishGlobalModel() {
         federatedAggregationService.republishLatestGlobalWeights();
+        auditLogger.info("REST_AUDIT global_model_republish_queued");
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -113,6 +118,7 @@ public class MqttController {
     /** Performs the republishAllModels operation. */
     public PublishResponse republishAllModels() {
         federatedAggregationService.republishAllModels();
+        auditLogger.info("REST_AUDIT all_models_republish_queued");
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -128,7 +134,7 @@ public class MqttController {
                 commandsTopic,
                 1,
                 false);
-        logger.info("REST_AUDIT model_selection_queued active_model={} topic={}", request.activeModel(), commandsTopic);
+        auditLogger.info("REST_AUDIT model_selection_queued active_model={} topic={}", request.activeModel(), commandsTopic);
         return new PublishResponse("queued", Instant.now());
     }
 
@@ -147,7 +153,7 @@ public class MqttController {
                 commandsTopic,
                 1,
                 false);
-        logger.info("REST_AUDIT training_queued quantized={} topic={}", request.useQuantization(), commandsTopic);
+        auditLogger.info("REST_AUDIT training_queued quantized={} topic={}", request.useQuantization(), commandsTopic);
         return new PublishResponse("queued", Instant.now());
     }
 

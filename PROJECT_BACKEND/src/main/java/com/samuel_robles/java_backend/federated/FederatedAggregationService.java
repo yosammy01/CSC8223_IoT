@@ -24,6 +24,7 @@ public class FederatedAggregationService {
 
     /** Performs the getLogger operation. */
     private static final Logger logger = LoggerFactory.getLogger(FederatedAggregationService.class);
+    private static final Logger auditLogger = LoggerFactory.getLogger("experiment.audit");
 
     /** Stores the mqttPublisher value. */
     private final MqttPublisher mqttPublisher;
@@ -119,7 +120,7 @@ public class FederatedAggregationService {
         receivedUpdates.incrementAndGet();
         latestClientWeights.put(clientId, update);
         pendingUpdates.put(clientId, update);
-        logger.info(
+        auditLogger.info(
                 "FEDAVG_AUDIT update_accepted client={} weight_count={} received_updates={} pending_clients={}/{}",
                 clientId,
                 update.length,
@@ -149,7 +150,7 @@ public class FederatedAggregationService {
         snapshotRepository.save(new FederatedModelSnapshot(
                 "GLOBAL", "GLOBAL", null, QuantizedWeightsCodec.encode(aggregate), lastAggregationAt));
         completedRounds.incrementAndGet();
-        logger.info(
+        auditLogger.info(
                 "FEDAVG_AUDIT aggregation_complete round={} clients={} weight_count={} output_payload_bytes={} persisted=true",
                 completedRounds.get(),
                 updateCount,
