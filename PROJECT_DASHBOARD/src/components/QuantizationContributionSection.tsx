@@ -214,28 +214,36 @@ export default function QuantizationContributionSection({
                   <td className="py-2 px-3 font-sans font-medium text-slate-700">
                     Global Model Overall Accuracy (6 Poses)
                   </td>
-                  <td className="py-2 px-3 text-right">
-                    {global32BitAccuracy.toFixed(1)}%
+                  <td className="py-2 px-3 text-right text-slate-400">
+                    {global32BitAccuracy > 0
+                      ? `${global32BitAccuracy.toFixed(1)}%`
+                      : 'Not Tested'}
                   </td>
                   <td className="py-2 px-3 text-right font-bold text-indigo-700">
                     {global8BitAccuracy.toFixed(1)}%
                   </td>
                   <td className="py-2 px-3 text-right text-amber-700">
-                    -{accuracyDelta.toFixed(2)}% (negligible)
+                    {global32BitAccuracy > 0 && global8BitAccuracy > 0
+                      ? `-${accuracyDelta.toFixed(2)}% (negligible)`
+                      : '—'}
                   </td>
                 </tr>
                 <tr>
                   <td className="py-2 px-3 font-sans font-medium text-slate-700">
                     Global Model Macro-F1 Score
                   </td>
-                  <td className="py-2 px-3 text-right">
-                    {global32BitMacroF1.toFixed(1)}%
+                  <td className="py-2 px-3 text-right text-slate-400">
+                    {global32BitMacroF1 > 0
+                      ? `${global32BitMacroF1.toFixed(1)}%`
+                      : 'Not Tested'}
                   </td>
                   <td className="py-2 px-3 text-right font-bold text-indigo-700">
                     {global8BitMacroF1.toFixed(1)}%
                   </td>
                   <td className="py-2 px-3 text-right text-amber-700">
-                    -{Math.abs(global32BitMacroF1 - global8BitMacroF1).toFixed(2)}%
+                    {global32BitMacroF1 > 0 && global8BitMacroF1 > 0
+                      ? `-${Math.abs(global32BitMacroF1 - global8BitMacroF1).toFixed(2)}%`
+                      : '—'}
                   </td>
                 </tr>
               </tbody>
