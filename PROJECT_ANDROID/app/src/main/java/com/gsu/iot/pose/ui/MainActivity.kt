@@ -180,6 +180,7 @@ fun PoseClientScreen() {
 
     var globalModelLastSyncTime by remember { mutableStateOf("") }
     var isGlobalInferenceActive by remember { mutableStateOf(true) }
+    var isGlobalModelLoaded by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         // Load the datasets from local persistent storage on startup
@@ -201,12 +202,14 @@ fun PoseClientScreen() {
             globalModelLastSyncTime = formatter.format(Date())
             isGlobalInferenceActive = false // Pause global inference when new model arrives
             globalPredictedPose = "NEW MODEL (PAUSED)"
+            isGlobalModelLoaded = true
         }
         MqttClientManager.onGlobalModelResetCommand = {
             globalModelLastSyncTime = ""
             globalAccuracyResult = null
             globalPredictedPose = "Unknown"
             isGlobalInferenceActive = true
+            isGlobalModelLoaded = false
         }
         MqttClientManager.onResetCommand = {
             trainingDataset.clear()
@@ -220,6 +223,7 @@ fun PoseClientScreen() {
             globalModelLastSyncTime = ""
             isCountingDown = false
             isRecordingActive = false
+            isGlobalModelLoaded = false
         }
         MqttClientManager.onStartTrainingCommand = {
             // Server commanded us to start a baseline or quantized training run
@@ -537,70 +541,116 @@ fun PoseClientScreen() {
             }
 
             AppScreenMode.TRAINING -> {
-                Text("Local Model Training", style = MaterialTheme.typography.titleMedium)
-                
-                val isPoseComplete = currentTrainingPoseSamples >= targetSampleLimit
-                val progress = (currentTrainingPoseSamples.toFloat() / targetSampleLimit).coerceIn(0f, 1f)
-
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    progress = { if (isCountingDown) 0f else progress },
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .height(8.dp),
-                    color = if (isPoseComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+                Text(
+                    if (isGlobalModelLoaded) "Global Model Training (Phase 2)" else "Local Model Training (Phase 1)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 
-                if (isCountingDown) {
-                    Text(
-                        "Get Ready! Position phone for ${poseNames[activeTargetPose]}...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    Text(
-                        "$countdownSeconds",
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                } else if (isRecordingActive) {
-                    Text(
-                        "Recording ${poseNames[activeTargetPose]}: $currentTrainingPoseSamples / $targetSampleLimit samples",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else if (isPoseComplete) {
-                    Text(
-                        "✓ Target reached for ${poseNames[activeTargetPose]} ($targetSampleLimit/$targetSampleLimit)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                if (isGlobalModelLoaded) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(0.9f),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                "🔒 Local Training Locked",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                "Global Model received from server. Train the Global Model on your local dataset for 20 epochs and submit the update.",
+                                style = MaterialTheme.typography.bodySmall,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            ModelManager.trainGlobalEpochsOnDataset(trainingDataset, epochs = 20)
+                            val globalWeights = ModelManager.federatedModel.getWeights()
+                            MqttClientManager.publishLocalWeights(globalWeights)
+                            playBeepSound(ToneGenerator.TONE_PROP_ACK, 200)
+                        },
+                        enabled = trainingDataset.isNotEmpty() && !isCountingDown && !isRecordingActive,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Train & Submit Global Model (20 Epochs)")
+                    }
                 } else {
-                    Text(
-                        "Selected: ${poseNames[activeTargetPose]} ($currentTrainingPoseSamples / $targetSampleLimit samples)",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                }
+                    val isPoseComplete = currentTrainingPoseSamples >= targetSampleLimit
+                    val progress = (currentTrainingPoseSamples.toFloat() / targetSampleLimit).coerceIn(0f, 1f)
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        isCountingDown = true
-                        countdownSeconds = 3
-                        isRecordingActive = false
-                    },
-                    enabled = !isCountingDown && !isRecordingActive && currentTrainingPoseSamples < targetSampleLimit
-                ) {
-                    Text(
-                        if (isCountingDown) "Get Ready..." 
-                        else if (isRecordingActive) "Recording..." 
-                        else "Start Recording ${poseNames[activeTargetPose]}"
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { if (isCountingDown) 0f else progress },
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(8.dp),
+                        color = if (isPoseComplete) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    if (isCountingDown) {
+                        Text(
+                            "Get Ready! Position phone for ${poseNames[activeTargetPose]}...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                        Text(
+                            "$countdownSeconds",
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else if (isRecordingActive) {
+                        Text(
+                            "Recording ${poseNames[activeTargetPose]}: $currentTrainingPoseSamples / $targetSampleLimit samples",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else if (isPoseComplete) {
+                        Text(
+                            "✓ Target reached for ${poseNames[activeTargetPose]} ($targetSampleLimit/$targetSampleLimit)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    } else {
+                        Text(
+                            "Selected: ${poseNames[activeTargetPose]} ($currentTrainingPoseSamples / $targetSampleLimit samples)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = {
+                            isCountingDown = true
+                            countdownSeconds = 3
+                            isRecordingActive = false
+                        },
+                        enabled = !isGlobalModelLoaded && !isCountingDown && !isRecordingActive && currentTrainingPoseSamples < targetSampleLimit
+                    ) {
+                        Text(
+                            if (isCountingDown) "Get Ready..." 
+                            else if (isRecordingActive) "Recording..." 
+                            else "Start Recording ${poseNames[activeTargetPose]}"
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))

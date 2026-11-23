@@ -61,6 +61,13 @@ object ModelManager {
     }
 
     /**
+     * Trains [federatedModel] on the entire local dataset across multiple epochs.
+     */
+    fun trainGlobalEpochsOnDataset(dataset: Map<Int, List<FloatArray>>, epochs: Int = 20) {
+        federatedModel.trainEpochs(dataset, epochs)
+    }
+
+    /**
      * Resets both [localModel] and [federatedModel] parameters back to initial random weights.
      */
     fun resetAll() {
