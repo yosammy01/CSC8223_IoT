@@ -84,8 +84,12 @@ public class MqttController {
                 || !StringUtils.hasText(command.get("command").asText())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A JSON command is required.");
         }
+        String commandName = command.get("command").asText();
         mqttPublisher.publish(command.toString(), commandsTopic, 1, false);
-        auditLogger.info("REST_AUDIT federated_command_queued topic={} command={}", commandsTopic, command.get("command").asText());
+        if ("RESET_GLOBAL".equals(commandName)) {
+            federatedAggregationService.deleteGlobalModel();
+        }
+        auditLogger.info("REST_AUDIT federated_command_queued topic={} command={}", commandsTopic, commandName);
         return new PublishResponse("queued", Instant.now());
     }
 

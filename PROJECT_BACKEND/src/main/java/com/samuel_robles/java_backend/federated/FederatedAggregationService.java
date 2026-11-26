@@ -41,8 +41,6 @@ public class FederatedAggregationService {
     private final JdbcTemplate jdbcTemplate;
     /** Stores updates awaiting a completed federated round. */
     private final Map<String, float[]> pendingUpdates = new LinkedHashMap<>();
-    /** Stores the latestClientWeights value. */
-    private final Map<String, float[]> latestClientWeights = new LinkedHashMap<>();
     /** Stores the latestGlobalWeights value. */
     /** Stores the latest aggregated global weights. */
     private float[] latestGlobalWeights;
@@ -118,25 +116,23 @@ public class FederatedAggregationService {
             throw new IllegalArgumentException("Federated updates must contain exactly 502 weights.");
         }
         receivedUpdates.incrementAndGet();
-        latestClientWeights.put(clientId, update);
         pendingUpdates.put(clientId, update);
         auditLogger.info(
                 "FEDAVG_AUDIT update_accepted client={} weight_count={} received_updates={} pending_clients={}/{}",
                 clientId,
                 update.length,
                 receivedUpdates.get(),
-                latestClientWeights.size(),
+                pendingUpdates.size(),
                 expectedClients);
-        if (latestClientWeights.size() < expectedClients) {
+        if (pendingUpdates.size() < expectedClients) {
             return;
         }
 
         float[] aggregate = new float[update.length];
-        int updateCount = latestClientWeights.size();
-        for (float[] clientUpdate : latestClientWeights.values()) {
+        int updateCount = pendingUpdates.size();
+        for (float[] clientUpdate : pendingUpdates.values()) {
             if (clientUpdate.length != aggregate.length) {
                 pendingUpdates.clear();
-                latestClientWeights.clear();
                 throw new IllegalArgumentException(
                         "All models in a federated round must have the same weight count.");
             }
@@ -178,10 +174,21 @@ public class FederatedAggregationService {
     /** Performs the resetAggregationStatus operation. */
     public synchronized void resetAggregationStatus() {
         pendingUpdates.clear();
-        latestClientWeights.clear();
         receivedUpdates.set(0);
         completedRounds.set(0);
         lastAggregationAt = null;
+    }
+
+    /** Deletes the persisted global model and clears the current FedAvg round. */
+    public synchronized void deleteGlobalModel() {
+        snapshotRepository.deleteById("GLOBAL");
+        latestGlobalWeights = null;
+        lastAggregationAt = null;
+        pendingUpdates.clear();
+        receivedUpdates.set(0);
+        completedRounds.set(0);
+        mqttPublisher.publish(new byte[0], globalWeightsTopic, 1, true);
+        auditLogger.info("FEDAVG_AUDIT global_model_deleted");
     }
 
     /** Performs the republishLatestGlobalWeights operation. */

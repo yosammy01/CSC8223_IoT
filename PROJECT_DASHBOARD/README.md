@@ -123,7 +123,7 @@ The dashboard supports both:
 | **REST POST** | `/api/mqtt/federated/model/toggle` | Dashboard → Server → MQTT | `{"activeModel":"GLOBAL"}` → publishes `{"command":"SET_MODEL","active_model":"GLOBAL"}` to `federated/commands`. |
 | **REST POST** | `/api/mqtt/federated/model/republish` | Dashboard → Server → MQTT | Republishes latest global weights to `federated/global/weights`. |
 | **REST POST** | `/api/mqtt/federated/status/reset` | Dashboard → Server | Clears pending client updates, received update counter, completed round counter, and last aggregation timestamp without deleting the persisted global model or resetting the phones. |
-| **REST POST** | `/api/mqtt/federated/command` | Dashboard → Server → MQTT | Publishes JSON commands (`RESET_GLOBAL`, `RESET_ALL`, `START_TRAINING`, `SET_MODEL`) to `federated/commands`. |
+| **REST POST** | `/api/mqtt/federated/command` | Dashboard → Server → MQTT | Publishes JSON commands (`RESET_GLOBAL`, `RESET_ALL`, `START_TRAINING`, `SET_MODEL`) to `federated/commands`. `RESET_GLOBAL` also deletes the server's persisted and in-memory global model, clears its retained MQTT weights, and clears the active round/counters; `RESET_ALL` resets phone models only. |
 
 ---
 
@@ -193,4 +193,3 @@ npm run lint
 4. **Present Quantitative Evaluation & Technical Contribution**:
    - Open **2. Three-Model Comparison (6×6 Matrices)** to show the confusion matrices, Macro-F1 scores, and live prediction capture.
    - Open **3. 8-Bit Quantization Contribution** to show the `2008 B` $\rightarrow$ `506 B` (**74.80%**) MQTT payload reduction and inspect individual quantized weights.
-

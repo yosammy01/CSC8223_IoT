@@ -103,6 +103,36 @@ class MqttControllerTest {
     }
 
     @Test
+    void resetGlobalCommandDeletesServerGlobalModel() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/command")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"command":"RESET_GLOBAL"}
+                        """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("queued"));
+
+        verify(mqttPublisher).publish(
+                eq("{\"command\":\"RESET_GLOBAL\"}"),
+                eq("federated/commands"),
+                eq(1),
+                eq(false));
+        verify(federatedAggregationService).deleteGlobalModel();
+    }
+
+    @Test
+    void resetAllCommandDoesNotDeleteServerGlobalModel() throws Exception {
+        mockMvc.perform(post("/api/mqtt/federated/command")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"command":"RESET_ALL"}
+                        """))
+                .andExpect(status().isAccepted());
+
+        verify(federatedAggregationService, org.mockito.Mockito.never()).deleteGlobalModel();
+    }
+
+    @Test
     void republishGlobalModelPublishesCachedModel() throws Exception {
         mockMvc.perform(post("/api/mqtt/federated/model/republish"))
                 .andExpect(status().isAccepted())

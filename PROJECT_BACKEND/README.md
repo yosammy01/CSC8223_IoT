@@ -98,12 +98,13 @@ must be exactly 2008 bytes (502 big-endian floats). The backend detects the
 format from the exact payload size and rejects legacy or malformed model
 updates.
 
-Local updates are used only in memory for the active training run. The latest
-update from each client remains available so later batches from one client can
-be aggregated with the other client's latest model. They are cleared by the
-FedAvg status reset and are not stored in PostgreSQL or the server's
-latest-message cache. Local and global model payloads use the Android-compatible
-format: a 4-byte
+Local updates are used only in memory for the active FedAvg round. The server
+waits for one update from every configured client before aggregating; another
+update from a client already seen in the current round replaces that client's
+pending update and does not complete the round. Round updates are cleared once
+aggregation completes, so each round requires fresh updates from all clients.
+They are not stored in PostgreSQL or the server's latest-message cache. Local
+and global model payloads use the Android-compatible format: a 4-byte
 big-endian `maxAbs` float followed by signed 8-bit quantized weights. The
 backend averages the dequantized values and re-encodes the result.
 
@@ -137,6 +138,12 @@ curl.exe -X POST http://localhost:8080/api/mqtt/federated/training `
 
 The training endpoint forwards the command to the Android clients; it does not
 train models on the server.
+
+Sending `{"command":"RESET_GLOBAL"}` to `/api/mqtt/federated/command` resets
+the federated model on the phones, deletes the server's persisted and in-memory
+global model, clears its retained MQTT global-weights message, and resets the
+active round and counters. `RESET_ALL` resets the phone models but does not
+delete the server's global model.
 
 ## Configuration
 
