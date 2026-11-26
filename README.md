@@ -165,6 +165,20 @@ To evaluate federated learning under an extreme **non-IID** data distribution, n
 
 ---
 
+## Required Systems & Software
+
+| Component | Software / Runtime | Version | Notes |
+| :--- | :--- | :--- | :--- |
+| **Orchestration Server (`PROJECT_BACKEND`)** | Java JDK | `26` | Configured in [`PROJECT_BACKEND/pom.xml`](./PROJECT_BACKEND/pom.xml) (`mvnw.cmd` / `mvnw` wrapper included) |
+| **Orchestration Server (`PROJECT_BACKEND`)** | Spring Boot | `4.1.0` | Spring Integration MQTT, WebSockets, Spring Data JPA |
+| **MQTT Broker** | Eclipse Mosquitto | `2.x` | Configured via [`MQTT/mosquitto.conf`](./MQTT/mosquitto.conf) (port `1883`) |
+| **Database** | PostgreSQL | `16+` (or `14+`) | Running on `localhost:5432`, default DB `postgres` |
+| **Web Dashboard (`PROJECT_DASHBOARD`)** | Node.js & npm | Node `20+` / npm `10+` | React `^19.2.8`, TypeScript `~6.0.2`, Vite `^8.2.0`, Tailwind CSS `^4.3.3` |
+| **Android Client (`PROJECT_ANDROID`)** | Android Studio / Gradle / AGP | Gradle `8.13`, AGP `8.13.2`, Kotlin `2.0.21` | `compileSdk = 34`, `targetSdk = 34`, `minSdk = 26`, Java `17` bytecode target |
+| **Edge Hardware** | 2 Physical Android Phones | Android `8.0+` (API `26+`) | On same Wi-Fi/LAN as the computer running Mosquitto & Spring Boot |
+
+---
+
 ## Quick Start: Building & Running the Complete System
 
 ### 1. Start MQTT Broker & PostgreSQL + Spring Boot Backend (`PROJECT_BACKEND`)
@@ -172,7 +186,7 @@ To evaluate federated learning under an extreme **non-IID** data distribution, n
 Start Eclipse Mosquitto with network listener and anonymous access enabled:
 
 ```powershell
-mosquitto -c mqtt/mosquitto.conf -v
+mosquitto -c MQTT/mosquitto.conf -v
 ```
 
 A PostgreSQL instance must also be available and running. It may already run as a background service, so normally you only need to start Spring Boot. Spring Boot does **not** install or start PostgreSQL or create the PostgreSQL server. It connects to the running database using `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, and `SPRING_DATASOURCE_PASSWORD` (the local defaults are the `postgres` database on `localhost:5432` and user `postgres`).
@@ -205,9 +219,33 @@ Open [`PROJECT_ANDROID`](./PROJECT_ANDROID) in **Android Studio** (or build via 
 cd PROJECT_ANDROID
 .\gradlew.bat assembleDebug
 ```
+You can also install the prebuilt debug APK directly via ADB:
+
+```powershell
+adb install -r PROJECT_ANDROID/app/build/outputs/apk/debug/app-debug.apk
+```
 On each phone, enter the computer's LAN IP address in the **Broker IP** field and tap **Connect**.
 
-### 4. Viewing Server Audit Logs (`PROJECT_BACKEND/logs/experiment-audit.log`)
+### 4. Running the Evaluation Code & Build Verification
+
+1. **On-Device Model Evaluation (`PROJECT_ANDROID`)**:
+   - After completing local training and at least one FedAvg round, switch each phone to **Eval / Calib** mode.
+   - Record **10 samples per pose** across all **6 poses** (60 universal evaluation samples per phone).
+   - Tap **Run Evaluation** on each phone to benchmark **Local Model Accuracy** vs. **Global Model Accuracy** on-device.
+2. **Confusion Matrix & Macro-F1 Evaluation (`PROJECT_DASHBOARD`)**:
+   - In the **Model Comparison & Evaluation** section of the dashboard (`http://localhost:5173`), select the model under test (**Client A Local**, **Client B Local**, or **Federated Global**), choose the true pose label, and click **Live Evaluation Capture** while holding each pose to compute the $6 \times 6$ confusion matrix, per-class recall, and **Macro-F1** score.
+3. **Automated Backend & Frontend Build/Test Checks**:
+   ```powershell
+   # Backend unit/integration tests
+   cd PROJECT_BACKEND
+   .\mvnw.cmd test
+
+   # Dashboard TypeScript check & production build
+   cd PROJECT_DASHBOARD
+   npm run build
+   ```
+
+### 5. Viewing Server Audit Logs (`PROJECT_BACKEND/logs/experiment-audit.log`)
 The Spring Boot backend automatically writes all federated and MQTT control traffic—local model updates, FedAvg rounds and aggregation, federated REST actions, outbound MQTT messages, and global-model republishing—to `PROJECT_BACKEND/logs/experiment-audit.log` while **excluding** high-frequency inference telemetry. It rolls daily at `10 MB` (retaining 30 files) and can be overridden with `APP_AUDIT_LOG_FILE`.
 
 ```powershell
